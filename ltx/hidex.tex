@@ -247,7 +247,7 @@ We need to maximise the expected log-likelihood function
 \end{equation}
 with respect to the unknown parameters $\theta$. Noting that 
 \begin{eqnarray}
-	\lefteqn{\E\left[\int_\mathcal{S}\int_\mathcal{S}ds ds' f_t(s) Q^{-1}(s,s') \hat{f}_t(s')\right] } \\ 
+	\lefteqn{\E\left[\int_\mathcal{S}\int_\mathcal{S}ds ds' f_t(s) Q^{-1}(s,s') \hat{f}_t(s')\right] } \nonumber \\ 
 		&& = \int_\mathcal{S}\int_\mathcal{S}ds ds' \E[f_t(s)] Q^{-1}(s,s') \hat{f}_t(s') \\
 		&& = \dist{\hat{f}}{Q^{-1}}
 \end{eqnarray}
@@ -258,7 +258,7 @@ due to the fact that the expectation of the mean field $\hat{f}$ is itself, we c
 	\frac{1}{2}\sum_t \dist{\hat{f}_t}{Q^{-1}}
 	- \frac{1}{2}\sum_t \dist{\hat{\yvec}_t}{R^{-1}}
 \end{equation}
-where $\epsilon$ has been abused somewhat to include additional terms that do not depend on the unknown parameters $\theta$. We will deal with each of these terms in turn, using the decompositions to write them explicitly in terms of the unknown parameters.
+where $\epsilon$ has been abused somewhat to include additional terms that do not depend on the unknown parameters $\theta$. We will deal with both of these terms in turn, using the decompositions to write them explicitly in terms of the unknown parameters.
 
 Firstly, we can substitute for $\hat{f}$, rewriting the first term in Equation \ref{eqn:exloglik} as
 \begin{equation}
