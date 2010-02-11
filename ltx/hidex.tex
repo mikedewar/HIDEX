@@ -1,0 +1,292 @@
+\documentclass{IEEEtran}
+\title{Spatiotemporal System Identification - the HIDEX($p,q$) model}
+\author{Michael Dewar, Kenneth Scerri and Visakan Kadirkamanathan}
+
+\usepackage{color}
+\usepackage{amssymb,amsmath} %the AMS stuff
+\usepackage{caption} 
+\usepackage[font=footnotesize]{subfig} % These are IEEE specific options. subfig overrides the caption formatting
+\usepackage{graphicx} % to include graphics
+\usepackage{booktabs} % tables
+\usepackage{cite}
+\usepackage{algorithm,algorithmic}
+
+\newcommand{\todo}[1]{\textsf{\emph{\textbf{\textcolor{blue}{#1}}}}}
+\newcommand{\GP}[2]{\mathrm{GP}(#1,#2)}
+\newcommand{\N}[2]{\mathrm{N}(#1,#2)}
+\newcommand{\inner}[3]{\langle#1,#2\rangle_{#3}}
+\newcommand{\dist}[2]{\|#1\|_{#2}}
+
+\DeclareMathOperator{\tr}{tr}
+\DeclareMathOperator{\trb}{{\bf tr}}
+\DeclareMathOperator{\E}{E}
+\DeclareMathOperator{\R}{\mathbb{R}}
+\DeclareMathOperator{\F}{\mathbb{F}}
+\DeclareMathOperator{\G}{\mathbb{G}}
+\DeclareMathOperator{\p}{p}
+\DeclareMathOperator{\cov}{cov}
+\DeclareMathOperator{\vecf}{vec}
+\DeclareMathOperator{\kron}{\otimes}
+\DeclareMathOperator{\Z}{\mathbb{Z}}
+\DeclareMathOperator{\xvec}{\mathbf{x}}
+\DeclareMathOperator{\uvec}{\mathbf{u}}
+\DeclareMathOperator{\avec}{\mathbf{a}}
+\DeclareMathOperator{\bvec}{\mathbf{b}}
+\DeclareMathOperator{\dvec}{\mathbf{d}}
+\DeclareMathOperator{\fvec}{\mathbf{f}}
+\DeclareMathOperator{\gvec}{\mathbf{g}}
+\DeclareMathOperator{\yvec}{\mathbf{y}}
+\DeclareMathOperator{\psivec}{\boldsymbol{\psi}}
+\DeclareMathOperator{\phivec}{\boldsymbol{\phi}}
+\DeclareMathOperator{\gammavec}{\boldsymbol{\gamma}}
+\DeclareMathOperator{\upsilonvec}{\boldsymbol{\upsilon}}
+\DeclareMathOperator{\thetaML}{\theta_{\mathrm{ML}}}
+\DeclareMathOperator{\onto}{\rightarrow}
+\DeclareMathOperator{\block}{\mathrm{block}}
+% Envrionments
+\newtheorem{definition}{Definition}
+\newtheorem{corollary}{Corollary} 
+\newtheorem{remark}{Remark} 
+\newtheorem{theorem}{\textbf{Theorem}}
+\newtheorem{assumption}{Assumption}
+\newtheorem{lemma}{Lemma}
+\newtheorem{example}{Example}
+
+\begin{document}
+\maketitle
+
+\section{Introduction}
+
+\section{The HIDEX($p,q$) Model}
+\label{sec:model}
+
+The model is defined across spatial locations $s \in \mathcal{S} \subset \mathbb{R}^{n_\mathcal{S}}$ and at times $t \in \mathbb{Z}_+$. Here $n_\mathcal{S} \in \{1,2,3\}$ is the spatial dimension of the system under study, and, as time is always one dimensional, it is $n_\mathcal{S}$ that we use to describe the dimension of the model. 
+
+\begin{definition}[Spatial Mixing Kernel]
+	Let $\mathcal{S}$ denote an $n_\mathcal{S}$-dimensional physical space and $f_t(s): \mathbb{R}^{n_\mathcal{S}} \onto \mathbb{R}$ denote the spatial field across space $s \in \mathcal{S}$ at time $t \in \mathbb{Z}_+$. The kernel $k(s,r): \mathbb{R}^{n_\mathcal{S}} \times \mathbb{R}^{n_\mathcal{S}} \onto \mathbb{R}$ of the integral operator
+	\begin{equation}
+		(\mathbb{K}f)(s) = \int k(s,r) f_{t-1}(r) dr
+	\end{equation}
+	for $r \in \mathcal{S}$ is known as a \emph{spatial mixing kernel}. If $k(s,r) = k(s-r) ~ \forall r$ the spatial mixing kernel is known as a \emph{spatially homogenous spatial mixing kernel}.
+\end{definition}
+
+\begin{definition}[HIDEX Model]
+	\label{def:hidex}
+	The linear spatiotemporal integrodifference equation with exogenous inputs (HIDEX($p,q$)) model is defined by the following equations
+	\begin{equation}
+		\label{eqn:hidex-hidden}
+	f_t(s)= \sum_{i=1}^{p} (\F f_{t-i})(s) + \sum_{j=1}^{q}(\G g_{t-j})(s)+e(s)
+	\end{equation}
+	\begin{equation}
+	\label{eqn:hidex-obs}
+	y_t(s_k) = (\mathbb{H}f_t)(s_k) + \epsilon
+	\end{equation}
+	where $\F_i,\G_j,\mathbb{H}$ are operators with spatial mixing kernels $F_i(s,r), G_j(s,r), H(s,r)$ respectively. Here $f_t(s)$ is the hidden field and $g_{t}(s)$ is the input field at time $t$; $e(s)$ is the disturbance. The nonnegative model orders $p,q$ are the orders of the autoregression and the input respectively. The output $y_t(s_k)$ is a point in the observable field at spatial location $s_k$, corrupted by the noise process $\epsilon$.
+\end{definition}
+
+\begin{assumption}[Stochasticity]
+	\label{ass:noise}
+	The following assumptions are made about the stochasticity of the HIDEX($p,q$) given in Definition \ref{def:hidex}.
+	\begin{itemize}
+		\item The disturbance $e_t(s) \sim \mathrm{GP}(0,Q(s,s'))$ is assumed i.i.d, drawn from a Gaussian Process with zero mean and covariance function $Q(s,s')$.
+		\item The observation noise $\epsilon \sim N(0,\sigma)$ is assumed i.i.d, drawn from a univariate normal distribution with zero mean and variance $\sigma$.
+		\item The initial field $f_0(s) \sim \mathrm{GP}(0,Q(s,s'))$ is drawn from a Gaussian Process with zero mean and covariance function $Q(s,s')$.
+	\end{itemize}
+\end{assumption}
+
+\begin{assumption}[Input and Output]
+	\label{ass:inout}
+The following assumptions are made on the input and output of the system under study:
+	\begin{itemize}
+		\item Input fields $g_t(s)$ are known exactly for all $s$ and $t$
+		\item Collected observations $Y = \{ y_t(s) : t = 1 \ldots T, ~ s \in \{s_1, s_2 \ldots s_m\} \}$ are generated by an HIDEX process of Definition \ref{def:hidex}.
+	\end{itemize}
+\end{assumption}
+
+\subsection{Deriving the Log-Likelihood}
+
+Let the unknown parameter set be defined as $\theta = \{F_1, F_2, \ldots F_p, G_1,G_2,\ldots G_q, H\}$ - the set of all the spatial mixing kernels that together define the HIDEX model. Let $\mathcal{F} = \{f_t(s) : t = 1 \ldots T\}$ denote the set of fields associated with each time point of the collected observations and similarly $\mathcal{G} = \{g_t(s) : t = 1 \ldots T\}$ denotes all the inputs. The likelihood factorises along the independence structures defined by the model formulation:
+\begin{equation}
+	\begin{split}
+	p(\mathcal{F}, Y;\theta) =  p(f_0(s)) \prod_{t=1}^T p(\yvec_t|f_t(s))
+	\prod_{t=1}^T  p(f_t(s)|\mathcal{F}_{t-1}^{t-p}, \mathcal{G}_{t-1}^{t-q}) 
+	\end{split}
+\end{equation}
+where $\yvec_t = [y_t(s_1) ~ y_t(s_2) ~ \ldots ~ y_t(s_m)]^\top$, the vector formed by evaluating $y_t(s)$ of Equation \ref{eqn:hidex-obs} at each of the $m$ observation locations. Here $\mathcal{F}_{t-1}^{t-p} = \{f_{t-1} \ldots f_{t-p}\}$ and similarly for $\mathcal{G}_{t-1}^{t-q}$. Note that we have dropped the dependence on $\theta$ for notational convenience for the moment. Using the assumptions related to the observation noise, disturbance and initial condition in Assumption \ref{ass:noise}, these distributions are
+\begin{equation}
+	\label{eqn:ydist}
+	p(\yvec_t|f_t(s)) = \N{\hat{\yvec}_t}{R}
+\end{equation}
+\begin{equation}
+	\label{eqn:fdist}
+	p(f_t(s)|\mathcal{F}_{t-1}^{t-p}, \mathcal{G}_{t-1}^{t-q}) = \GP{ \hat{f}_t}{Q(s,s')}
+\end{equation}
+where $R = \sigma I_m$,
+\begin{equation}
+	\hat{f}_t(s) =\sum_{i=1}^{p}( \F f_{t-i})(s) + \sum_{j=1}^{q}(\G g_{t-j})(s)
+\end{equation}
+and 
+\begin{equation}
+	\hat{\mathbf{y}}_t = (\mathbb{H}f_t)([s_1 \ldots s_m]^\top)
+\end{equation}
+which denotes the vector formed by the evaluation of $(\mathbb{H}f_t)$ at all the observation locations. Here $I_m$ denotes the $m\times m$ identity matrix.
+
+If we define the log likelihood as
+\begin{equation}
+	\label{eqn:loglik}
+	\ell(\theta) = \ln p(\mathcal{F}, Y;\theta)
+\end{equation}
+then, using the notation 
+\begin{equation}
+	\dist{f(s)}{Q} = \int_\mathcal{S} \int_\mathcal{S} ds~ds' f(s') Q(s',s) f(s)
+\end{equation}
+for functions and similarly
+\begin{equation}
+	\dist{y}{R} = y^\top Ry
+\end{equation}
+for vectors, we can substitute Equations \ref{eqn:ydist} and \ref{eqn:fdist} into the log likelihood \ref{eqn:loglik} to get an equation in terms of $\theta$ which we can consider maximising 
+\begin{equation}
+	\ell(\theta) =  \epsilon  - \frac{1}{2}\sum_t\dist{f_t(s) - \hat{f}_t(s)}{Q^{-1}} - \frac{1}{2}\sum_t\dist{\yvec_t-\hat{\yvec_t}}{R^{-1}}
+\end{equation}
+where $\epsilon$ collects together all the terms that do not depend on (any element of) $\theta$. We will abuse $\epsilon$ in what follows, using it to indicate terms which do not depend on $\theta$.
+
+\subsection{Decomposition}
+
+\todo{Don't know how to word these assumptions, but quite like the fact that they exist. Maybe VK's thesis does this sort of thing and the wording is correct in there?}
+
+\begin{assumption}[Field Decompositions]
+	We assume the following decompositions of the hidden and input fields can be made exactly:
+\begin{equation}
+	f_t(s) = \xvec_t^\top\phi(s)
+\end{equation}
+\begin{equation}
+	g_t(s) = \phi(s)^\top\uvec_t
+\end{equation}	 
+where $\xvec_t \in \R^{n_x}$ is a vector of unknown weights, referred to as the state of the hidden field at time $t$, and $\uvec_t \in \R^{n_x}$ is a vector of known weights, referred to as the input at time $t$. Here, $\phi(s)$ is a vector of basis functions drawn from the spanning set thingy.
+\end{assumption}
+
+\begin{assumption}[Kernel Decompositions]
+	We assume the following decompositions of the HIDEX model kernels can be made exactly:
+	\begin{equation}
+	F_i(s,s') = a_i^\top\psi(s,s')
+\end{equation}
+\begin{equation}
+	G_j(s,s') = b_j^\top\psi(s,s')
+\end{equation}
+\begin{equation}
+	H(s,s') = c^\top\psi(s,s')
+\end{equation}
+where $a_i, b_j, c \in \R^{n_y}$ are the parameters of the kernels $F_i, G_j$ and $H$ respectively. Here $\psi(s)$ is a vector of basis functions drawn from the spanning set thingy.
+\end{assumption}
+
+Under the decomposition
+\begin{equation}
+	f_t(s) = \xvec_t^\top\phi(s)
+\end{equation}
+we can rewrite 
+\begin{equation}
+	\dist{f_t(s) - \hat{f}_t(s)}{Q^{-1}} = \dist{\xvec_t - \hat{\xvec}_t}{\Xi}
+\end{equation}
+where $\Xi = \int\int ds' ds ~ \phi(s')Q^{-1}(s',s)\phi(s)^\top$. Here the vector $\xvec_t \in \R^{n_x}$ weights a vector of basis functions $\phi(s)$ that together decompose the current field $f_t(s)$, and similarly $\hat{\xvec}_t \in \R^{n_x}$ weights the decomposition of $\hat{f}(s)$. This allows us to replace the infinite dimensional term in the likelihood with a finite dimensional term via the decomposition, giving
+\begin{equation}
+	\ell(\theta) =  \epsilon  - \frac{1}{2}\dist{\xvec_t - \hat{\xvec}_t}{\Xi} - \frac{1}{2}\dist{\yvec_t-\hat{\yvec_t}}{R^{-1}}
+\end{equation}
+which is convex in $\hat{\xvec}_t$ and $\hat{\yvec}_t$. Recall that 
+\begin{equation}
+	\hat{f}_t(s) = \sum_{i=1}^{p}( \F f_{t-i})(s) + \sum_{j=1}^{q}(\G g_{t-j})(s)
+\end{equation}
+By introducing the decomposition $g_t(s) = \phi(s)^\top\uvec_t$ this can be re-written
+\begin{equation}
+	\phi(s)^\top\hat{\xvec}_t = \sum_{i=1}^{p}(\F \phi)(s)\xvec_{t-i} + \sum_{j=1}^{q}(\G\phi)(s)\uvec_{t-j}
+\end{equation}
+By decomposing the spatial mixing kernels $F_i(s,s')$ and $G_j(s,s')$:
+\begin{equation}
+	F_i(s,s') = a_i^\top\psi(s,s')
+\end{equation}
+\begin{equation}
+	G_j(s,s') = b_j^\top\psi(s,s')
+\end{equation}
+we can expand the integral operators $\mathbb{F}$ and $\mathbb{G}$, giving 
+\begin{equation}
+	\phi(s)^\top\hat{\xvec}_t =  \sum_{i=1}^{p} a_i^\top \Psi(s) \xvec_{t-i} + \sum_{j=1}^{q} b_j^\top \Psi(s) \uvec_{t-j}
+\end{equation}
+where 
+\begin{equation}
+	\Psi(s) = \int_\mathcal{S}ds' \psi(s,s') \phi(s')
+\end{equation}
+Finally, to achieve an expression for $\hat{\xvec}_t$ we pre-multiply both sides by $\phi(s)$ and integrate over space, giving
+\begin{equation}
+	\hat{\xvec}_t = \Phi^{-1} \int_\mathcal{S}ds \phi(s)\left(\sum_{i=1}^{p} a_i^\top \Psi(s) \xvec_{t-i} + \sum_{j=1}^{q} b_j^\top \Psi(s) \uvec_{t-j}\right)
+\end{equation}
+where $\Phi = \int_\mathcal{S}ds\phi(s)\phi(s)^\top$.
+\begin{remark}
+As a notational convenience, we have used the same basis functions in the decomposition of both the hidden field $f$ and of the input field $g$. However, it is important to note that in practice we may have a control surface that is local in the space $\mathcal{S}$, and hence would benefit from a specific, tailored decomposition. 
+\end{remark}
+
+\begin{remark}
+	By defining the following matrices
+	\begin{equation}
+		A_i = \Phi^{-1} \int_\mathcal{S}ds \phi(s) a_i^\top \Psi(s)
+	\end{equation}
+	\begin{equation}
+		B_j = \Phi^{-1} \int_\mathcal{S}ds \phi(s) b_j^\top \Psi(s)
+	\end{equation}
+	we can write an expression for $\hat{x}$ in multivariate ARX($p,q$) \cite{Ljung} form:
+	\begin{equation}
+		\hat{\xvec}_t = \sum_{i=1}^{p} A_i^\top \xvec_{t-i} +  \sum_{j=1}^{q} B_j^\top \uvec_{t-j}
+	\end{equation}
+	making clear the effect of the decomposition on the HIDEX model in Definition \ref{def:hidex}: we are representing an infinite dimensional spatiotemporal model using a finite (although probably high) dimensional vector autoregressive model via decomposition. The key to this approach is that, unlike standard vector autoregressive models, the number of field basis functions $n_x$, is independent to the number of parameters in $a_i$ or $b_j$. Therefore we can increase the spatial resolution, or spatial extent, of our model without generating more parameters to learn.
+\end{remark}
+
+\section{Parameter Estimation}
+
+\subsection{M-step}
+
+We need to maximise the expected log-likelihood function
+\begin{equation}
+	\begin{split}
+	\E[\ell(\theta)] = \epsilon - \frac{1}{2}\sum_t\E[\dist{f_t(s) - \hat{f}_t(s)}{Q^{-1}}]  \\
+	- \frac{1}{2}\sum_t\E[\dist{\yvec_t-\hat{\yvec_t}}{R^{-1}}]
+	\end{split}
+\end{equation}
+with respect to the unknown parameters $\theta$. Noting that 
+\begin{eqnarray}
+	\lefteqn{\E\left[\int_\mathcal{S}\int_\mathcal{S}ds ds' f_t(s) Q^{-1}(s,s') \hat{f}_t(s')\right] } \\ 
+		&& = \int_\mathcal{S}\int_\mathcal{S}ds ds' \E[f_t(s)] Q^{-1}(s,s') \hat{f}_t(s') \\
+		&& = \dist{\hat{f}}{Q^{-1}}
+\end{eqnarray}
+due to the fact that the expectation of the mean field $\hat{f}$ is itself, we can simplify this expression considerably by expanding each term, to give
+\begin{equation}
+	\label{eqn:exloglik}
+	\E[\ell(\theta)] = \epsilon  - 
+	\frac{1}{2}\sum_t \dist{\hat{f}_t}{Q^{-1}}
+	- \frac{1}{2}\sum_t \dist{\hat{\yvec}_t}{R^{-1}}
+\end{equation}
+where $\epsilon$ has been abused somewhat to include additional terms that do not depend on the unknown parameters $\theta$. We will deal with each of these terms in turn, using the decompositions to write them explicitly in terms of the unknown parameters.
+
+Firstly, we can substitute for $\hat{f}$, rewriting the first term in Equation \ref{eqn:exloglik} as
+\begin{equation}
+	\dist{\hat{f}_t}{Q^{-1}} = \dist{\sum_i(\mathbb{F}_i\hat{f}_{t-i})(s) + \sum_j(\mathbb{G}g_{t-j})(s)}{Q^{-1}}
+\end{equation}
+which can be expanded to give
+\begin{equation}
+	\begin{split}
+	\dist
+		{\hat{f}_t}
+		{Q^{-1}} 
+	= & \dist
+		{\sum_i(\mathbb{F}_i\hat{f}_{t-i})(s)}
+		{Q^{-1}} \\
+	& + \inner
+		{\sum_i(\mathbb{F}_i\hat{f}_{t-i})(s)}
+		{(\mathbb{G}g_{t-j})(s)}
+		{Q^{-1}} \\
+	& + \dist
+		{\sum_j(\mathbb{G}g_{t-j})(s)}
+		{Q^{-1}}
+	\end{split}
+\end{equation}
+
+
+
+\end{document}
