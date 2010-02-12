@@ -65,7 +65,7 @@ The model is defined across spatial locations $s \in \mathcal{S} \subset \mathbb
 \begin{definition}[Spatial Mixing Kernel]
 	Let $\mathcal{S}$ denote an $n_\mathcal{S}$-dimensional physical space and $f_t(s): \mathbb{R}^{n_\mathcal{S}} \onto \mathbb{R}$ denote the spatial field across space $s \in \mathcal{S}$ at time $t \in \mathbb{Z}_+$. The kernel $k(s,r): \mathbb{R}^{n_\mathcal{S}} \times \mathbb{R}^{n_\mathcal{S}} \onto \mathbb{R}$ of the integral operator
 	\begin{equation}
-		(\mathbb{K}f)(s) = \int k(s,r) f_{t-1}(r) dr
+		(\mathbb{K}f_t)(s) = \int k(s,r) f_{t-1}(r) dr
 	\end{equation}
 	for $r \in \mathcal{S}$ is known as a \emph{spatial mixing kernel}. If $k(s,r) = k(s-r) ~ \forall r$ the spatial mixing kernel is known as a \emph{spatially homogenous spatial mixing kernel}.
 \end{definition}
@@ -88,7 +88,7 @@ The model is defined across spatial locations $s \in \mathcal{S} \subset \mathbb
 	\label{ass:noise}
 	The following assumptions are made about the stochasticity of the HIDEX($p,q$) given in Definition \ref{def:hidex}.
 	\begin{itemize}
-		\item The disturbance $e_t(s) \sim \mathrm{GP}(0,Q(s,s'))$ is assumed i.i.d, drawn from a Gaussian Process with zero mean and covariance function $Q(s,s')$.
+		\item The disturbance $e(s) \sim \mathrm{GP}(0,Q(s,s'))$ is assumed i.i.d, drawn from a Gaussian Process with zero mean and covariance function $Q(s,s')$.
 		\item The observation noise $\epsilon \sim N(0,\sigma)$ is assumed i.i.d, drawn from a univariate normal distribution with zero mean and variance $\sigma$.
 		\item The initial field $f_0(s) \sim \mathrm{GP}(0,Q(s,s'))$ is drawn from a Gaussian Process with zero mean and covariance function $Q(s,s')$.
 	\end{itemize}
@@ -158,6 +158,7 @@ where $\epsilon$ collects together all the terms that do not depend on (any elem
 	\label{ass:fielddecomp}
 	We assume the following decompositions of the hidden and input fields can be made exactly:
 \begin{equation}
+	\label{eq:f decomp}
 	f_t(s) = \xvec_t^\top\phi(s)
 \end{equation}
 \begin{equation}
@@ -165,6 +166,7 @@ where $\epsilon$ collects together all the terms that do not depend on (any elem
 \end{equation}	 
 where $\xvec_t \in \R^{n_x}$ is a vector of unknown weights, referred to as the state of the hidden field at time $t$, and $\uvec_t \in \R^{n_x}$ is a vector of known weights, referred to as the input at time $t$. Here, $\phi(s) : \mathbb{R}^{n_\mathcal{S}} \onto \mathbb{R}$ is a vector of basis functions drawn from the spanning set thingy.
 \end{assumption}
+\todo{Might consider including a remark on how limiting this assumption is in practice, or conditions on $f_t(s)$ and $\sigma(s)$ to satisfy these assumptions.}
 
 \begin{assumption}[Kernel Decompositions]
 	\label{ass:kerndecomp}
@@ -181,11 +183,7 @@ where $\xvec_t \in \R^{n_x}$ is a vector of unknown weights, referred to as the 
 where $a_i, b_j, c \in \R^{n_y}$ are the parameters of the kernels $F_i, G_j$ and $H$ respectively. Here $\psi(s,s') : \mathbb{R}^{n_\mathcal{S}} \times \mathbb{R}^{n_\mathcal{S}} \onto \mathbb{R}$ is a vector of basis functions drawn from the spanning set thingy.
 \end{assumption}
 
-Under the decomposition
-\begin{equation}
-	f_t(s) = \xvec_t^\top\phi(s)
-\end{equation}
-we can rewrite 
+Under the decomposition (\ref{eq:f decomp}) we can rewrite 
 \begin{equation}
 	\dist{f_t(s) - \hat{f}_t(s)}{Q^{-1}} = \dist{\xvec_t - \hat{\xvec}_t}{\Xi}
 \end{equation}
