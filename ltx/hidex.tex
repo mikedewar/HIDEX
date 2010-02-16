@@ -136,9 +136,12 @@ If we define the log likelihood as
 	\label{eqn:loglik}
 	\ell(\theta) = \ln p(\mathcal{F}, Y;\theta)
 \end{equation}
-then, using the notation 
+then, using the notation
 \begin{equation}
-	\dist{f(s)}{Q} = \int_\mathcal{S} \int_\mathcal{S} ds~ds' f(s') Q(s',s) f(s)
+	\inner{f(s)}{g(s)}{Q} = \int_\mathcal{S} \int_\mathcal{S} ds~ds' f(s') Q(s',s) g(s)
+\end{equation}
+\begin{equation}
+	\dist{f(s)}{Q} = \inner{f(s)}{f(s)}{Q}
 \end{equation}
 for functions and similarly
 \begin{equation}
@@ -260,26 +263,83 @@ where $\epsilon$ has been abused somewhat to include additional terms that do no
 
 Firstly, we can substitute for $\hat{f}$, rewriting the first term in Equation \ref{eqn:exloglik} as
 \begin{equation}
-	\dist{\hat{f}_t}{Q^{-1}} = \dist{\sum_i(\mathbb{F}_i\hat{f}_{t-i})(s) + \sum_j(\mathbb{G}g_{t-j})(s)}{Q^{-1}}
+	\dist{\hat{f}_t}{Q^{-1}} = \dist{\sum_i(\mathbb{F}_i\hat{f}_{t-i}) + \sum_j(\mathbb{G}g_{t-j})}{Q^{-1}}
 \end{equation}
-which can be expanded to give
+where we have dropped the spatial argument on the integral operator for notational convienince (hence $(\mathbb{F}_i\hat{f}_{t-i})(s)$ is written simply $(\mathbb{F}_i\hat{f}_{t-i})$). This can be expanded to give
 \begin{equation}
 	\begin{split}
 	\dist
 		{\hat{f}_t}
 		{Q^{-1}} 
 	= & \dist
-		{\sum_i(\mathbb{F}_i\hat{f}_{t-i})(s)}
-		{Q^{-1}} \\
+		{\sum_i(\mathbb{F}_i\hat{f}_{t-i})}
+		{Q^{-1}} 
+	+ \dist
+		{\sum_j(\mathbb{G}g_{t-j})}
+		{Q^{-1}}\\
 	& + \inner
-		{\sum_i(\mathbb{F}_i\hat{f}_{t-i})(s)}
-		{(\mathbb{G}g_{t-j})(s)}
-		{Q^{-1}} \\
-	& + \dist
-		{\sum_j(\mathbb{G}g_{t-j})(s)}
+		{\sum_i(\mathbb{F}_i\hat{f}_{t-i})}
+		{\sum_j(\mathbb{G}g_{t-j})}
 		{Q^{-1}}
 	\end{split}
 \end{equation}
+To further simplify this equation, note that
+\begin{equation}
+	\dist{\sum_i(\mathbb{F}_i\hat{f}_{t-i})}
+	{Q^{-1}} = 
+	\sum_i \sum_{i'} \inner
+		{(\mathbb{F}_i\hat{f}_{t-i})}
+		{(\mathbb{F}_{i'}\hat{f}_{t-i'})}
+		{Q^{-1}}
+\end{equation}
+and, under the decomposition given in Assumption \ref{ass:kerndecomp}, we can write
+\begin{equation}
+	\inner
+		{(\mathbb{F}_i\hat{f}_{t-i})}
+		{(\mathbb{F}_{i'}\hat{f}_{t-i'})}
+		{Q^{-1}} =  
+	 a^\top \inner 
+		{(\Psi_i f_{t-i'})}
+		{(\Psi_i^\top f_{t-i'}) }
+		{Q^{-1}} a
+\end{equation}
+where we define a new operator $(\Psi f)(s) = \int_\mathcal{S}dr~\Psi(s,r)f_t(r)$. Hencec it is straightforward to write the first term of \ref{eqn:exloglik} as
+\begin{equation}
+	\begin{split}
+	\dist
+		{\hat{f}_t}
+		{Q^{-1}} = 
+		\sum_i\sum_{i'}a_i^\top \Gamma_{i,i'}^a
+		a_{i'} 
+		+ \sum_j\sum_{j'}b_j^\top \Gamma_{i,j'}^b
+		b_{j'} \\
+		+ \sum_i\sum_{j}a_i^\top \Gamma_{i,j}^{ab}
+		b_j
+		\end{split}
+\end{equation}
+where 
+\begin{equation}
+	 \Gamma_{i,i'}^a = \inner
+		{(\Psi_i f_{i})}
+		{(\Psi_{i'}^\top f_{i'})}
+		{Q^{-1}}
+\end{equation}
+\begin{equation}
+	\Gamma_{i,j'}^b = \inner
+		{(\Psi_j g_{j})}
+		{(\Psi_{j'}^\top g_{j'})}
+		{Q^{-1}}
+\end{equation}
+\begin{equation}
+	\Gamma_{i,j}^{ab} = \inner
+		{(\Psi_j f_{j})}
+		{(\Psi_{i'}^\top g_{j})}
+		{Q^{-1}}
+\end{equation}
+
+\todo{sort out hats!}
+
+\newpage
 
 \todo{Remark somewhere at the end about how big an assumption is that we can perform the decomposition - referencing Scerri 09}
 
