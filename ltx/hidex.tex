@@ -232,40 +232,90 @@ As a notational convenience, we have used the same basis functions in the decomp
 	\begin{equation}
 		\hat{\xvec}_t = \sum_{i=1}^{p} A_i^\top \xvec_{t-i} +  \sum_{j=1}^{q} B_j^\top \uvec_{t-j}
 	\end{equation}
-	making clear the effect of the decomposition on the HIDEX model in Definition \ref{def:hidex}: we are representing an infinite dimensional spatiotemporal model using a finite (although probably high) dimensional vector autoregressive model via decomposition. The key to this approach is that, unlike standard vector autoregressive models, the number of field basis functions $n_x$, is independent to the number of parameters in $a_i$ or $b_j$. Therefore we can increase the spatial resolution, or spatial extent, of our model without generating more parameters to learn.
+	making clear the effect of the decomposition on the HIDEX model in Definition \ref{def:hidex}: we are representing an infinite dimensional spatiotemporal model using a finite (although probably high) dimensional vector autoregressive model with exogenous inputs, via a basis function decomposition. The key to this approach is that, unlike standard vector autoregressive models, the number of field basis functions $n_x$, is independent to the number of parameters in $a_i$ or $b_j$. Therefore we can increase the spatial resolution, or spatial extent, of our model without generating more parameters to learn.
 \end{remark}
 
 \section{Parameter Estimation}
+
+We follow the standard derivation of the EM algorithm \cite{Ninness}. We first derive the maximum likelihood estimate of the parameters given distributions over the hidden field. We then show how to update the distributions over the hidden field given estimates of the parameters. 
+
+The key insights here are:
+\begin{itemize}
+	\item we can represent the expected log likelihood function for the HIDEX($p,q$) model as a quadratic in the weights of the decomposed spatial mixing kernels
+	\item given a set of parameters, generating distributions over the hidden field becomes a straightforward application of the Rauch-Tung-Streibel smoother \cite{Rauch}.
+\end{itemize} 
+
+\subsection{EM Algorithm}
+
+The EM algorithm is a well known method for jointly estimating the state sequence and parameters of state space models. It is by no means the only method: subspace \ref{subspace review}, variational \ref{who} and sampling \ref{who} approaches are also popular in this context. Our aim here is to demonstrate that the model presented above can be estimated using \emph{standard} system identification techniques. It should be noted, however, that the EM algorithm lends itself naturally to the case where the system matrices are parameterised, and hence presents a good starting point for the identification of the HIDEX($p,q$) model.
+
+The EM algorithm in this context seeks to find the maximum likelihood parameter estimates 
+\begin{equation}
+\thetaML=\arg\max_{\theta} \p (Y ; \theta)
+\end{equation}
+in the case where $\p(Y;\theta)$ is difficult to maximise directly due to a dependence on a hidden variable $X$. By exploiting a relationship between $\p(Y; \theta)$ and $\p(X,Y; \theta)$, it is possible to generate a sequence of parameter estimates that converges on the maximum likelihood parameter estimate.
+
+The EM algorithm achieves this by maximising a lower bound on the log likelihood
+\begin{equation}
+	\mathcal{Q}(\theta,\theta')=\E_{\theta'}\left[\ln p(X,Y;\theta)\right]
+\end{equation}
+where $\E_{\theta'}[\cdot]$ denotes expectation taken with respect to the distribution $\p(X|Y ; \theta')$ where $\theta'$ is the current parameter estimate. In this context \cite{Gibson05}, the algorithm consists of two steps: the E-step performs the expectation using the standard Rauch-Tung-Streibel (RTS) smoother \cite{Rauch65} producing the expected state sequence and therefore leading to a deterministic $\mathcal{Q}$-function which is a quadratic in $\theta$. The M-step finds the updated parameter estimate by maximising this quadratic.
 
 \subsection{M-step}
 
 We need to maximise the expected log-likelihood function
 \begin{equation}
+	\label{eqn:exploglik}
 	\begin{split}
 	\E[\ell(\theta)] = \epsilon - \frac{1}{2}\sum_t\E[\dist{f_t(s) - \hat{f}_t(s)}{Q^{-1}}]  \\
-	- \frac{1}{2}\sum_t\E[\dist{\yvec_t-\hat{\yvec_t}}{R^{-1}}]
+	- \frac{1}{2}\sum_t\E[\dist{\yvec_t-\hat{\yvec}_t}{R^{-1}}]
 	\end{split}
 \end{equation}
 with respect to the unknown parameters $\theta$. Noting that 
 \begin{eqnarray}
 	\lefteqn{\E\left[\int_\mathcal{S}\int_\mathcal{S}ds ds' f_t(s) Q^{-1}(s,s') \hat{f}_t(s')\right] } \nonumber \\ 
 		&& = \int_\mathcal{S}\int_\mathcal{S}ds ds' \E[f_t(s)] Q^{-1}(s,s') \hat{f}_t(s') \\
-		&& = \dist{\hat{f}}{Q^{-1}}
+		&& = \inner{\E[f_t(s)]}{\hat{f}(s)}{Q^{-1}}
 \end{eqnarray}
-due to the fact that the expectation of the mean field $\hat{f}$ is itself, we can simplify this expression considerably by expanding each term, to give
+due to the fact that the expectation of the mean field $\hat{f}$ is itself, we can simplify this expression by expanding each term, to give
 \begin{equation}
+	\begin{split}
 	\label{eqn:exloglik}
-	\E[\ell(\theta)] = \epsilon  - 
-	\frac{1}{2}\sum_t \dist{\hat{f}_t}{Q^{-1}}
+	\E[\ell(\theta)] = \epsilon
+	- \inner{\E[f_t(s)]}{\hat{f}_t(s)}{Q^{-1}}
+	- \frac{1}{2}\sum_t \dist{\hat{f}_t(s)}{Q^{-1}} \\
+	- \inner{\E[\yvec_t]}{\hat{\yvec}_t}{R^{-1}}
 	- \frac{1}{2}\sum_t \dist{\hat{\yvec}_t}{R^{-1}}
+	\end{split}
 \end{equation}
 where $\epsilon$ has been abused somewhat to include additional terms that do not depend on the unknown parameters $\theta$. We will deal with both of these terms in turn, using the decompositions to write them explicitly in terms of the unknown parameters.
 
-Firstly, we can substitute for $\hat{f}$, rewriting the first term in Equation \ref{eqn:exloglik} as
+Firstly, we can substitute for $\hat{f}$, rewriting the first two terms in Equation \ref{eqn:exloglik} as
 \begin{equation}
+	\label{eqn:Eff}
+	\inner{\E[f_t(s)]}{\hat{f}_t}{Q^{-1}} = \inner{\E[f_t(s)]}{\sum_i(\mathbb{F}_i\hat{f}_{t-i}) + \sum_j(\mathbb{G}g_{t-j})}{Q^{-1}}
+\end{equation}
+\begin{equation}
+	\label{eqn:fhat}
 	\dist{\hat{f}_t}{Q^{-1}} = \dist{\sum_i(\mathbb{F}_i\hat{f}_{t-i}) + \sum_j(\mathbb{G}g_{t-j})}{Q^{-1}}
 \end{equation}
-where we have dropped the spatial argument on the integral operator for notational convienince (hence $(\mathbb{F}_i\hat{f}_{t-i})(s)$ is written simply $(\mathbb{F}_i\hat{f}_{t-i})$). This can be expanded to give
+where we have dropped the spatial argument on the integral operator for notational convienince (hence $(\mathbb{F}_i\hat{f}_{t-i})(s)$ is written simply $(\mathbb{F}_i\hat{f}_{t-i})$). 
+
+Equation \ref{eqn:Eff} can be expanded to give
+\begin{equation}
+	\begin{split}
+	\inner{\E[f_t(s)]}{\hat{f}_t}{Q^{-1}} 
+	 = \inner
+		{\E[f_t(s)]}
+		{\sum_i(\mathbb{F}_i\hat{f}_{t-i})}
+		{Q^{-1}} \\
+	+ \inner
+		{\E[f_t(s)]}
+		{\sum_j(\mathbb{G}_jg_{t-j})}
+		{Q^{-1}}
+	\end{split}
+\end{equation}
+Similarly, \ref{eqn:fhat} can be expanded to give
 \begin{equation}
 	\begin{split}
 	\dist
@@ -283,7 +333,7 @@ where we have dropped the spatial argument on the integral operator for notation
 		{Q^{-1}}
 	\end{split}
 \end{equation}
-To further simplify this equation, note that
+To further simplify the expected log-likelihood, note that
 \begin{equation}
 	\dist{\sum_i(\mathbb{F}_i\hat{f}_{t-i})}
 	{Q^{-1}} = 
@@ -298,18 +348,17 @@ and, under the decomposition given in Assumption \ref{ass:kerndecomp}, we can wr
 		{(\mathbb{F}_i\hat{f}_{t-i})}
 		{(\mathbb{F}_{i'}\hat{f}_{t-i'})}
 		{Q^{-1}} =  
-	 a^\top \inner 
-		{(\Psi_i f_{t-i'})}
-		{(\Psi_i^\top f_{t-i'}) }
-		{Q^{-1}} a
+	 a_i^\top \inner 
+		{(\mathbb{P} f_{t-i'})}
+		{(\mathbb{P}^\top f_{t-i'}) }
+		{Q^{-1}} a_i
 \end{equation}
-where we define a new operator $(\Psi f)(s) = \int_\mathcal{S}dr~\Psi(s,r)f_t(r)$. Hencec it is straightforward to write the first term of \ref{eqn:exloglik} as
+where we define a new operator $(\mathbb{P} f)(s) = \int_\mathcal{S}dr~\Psi(s,r)f_t(r)$. Hence it is straightforward to write the first term of \ref{eqn:exploglik} as
 \begin{equation}
 	\begin{split}
-	\dist
-		{\hat{f}_t}
-		{Q^{-1}} = 
-		\sum_i\sum_{i'}a_i^\top \Gamma_{i,i'}^a
+	\frac{1}{2}\sum_t\E[\dist{f_t(s) - \hat{f}_t(s)}{Q^{-1}}] = 
+		\sum_i a_i^\top \lambda^a_i + \sum_j b_j^\top \lambda^b_j \\
+		+ \sum_i\sum_{i'}a_i^\top \Gamma_{i,i'}^a
 		a_{i'} 
 		+ \sum_j\sum_{j'}b_j^\top \Gamma_{i,j'}^b
 		b_{j'} \\
@@ -317,25 +366,43 @@ where we define a new operator $(\Psi f)(s) = \int_\mathcal{S}dr~\Psi(s,r)f_t(r)
 		b_j
 		\end{split}
 \end{equation}
-where 
+\todo{finish this off for $||y -\hat{y}||$}
+where
+\begin{equation}
+	\lambda_i^a = \inner
+	{\E[f_t(s)]}
+	{(\mathbb{P} f_{t-i})}
+	{Q^{-1}}
+\end{equation}
+\begin{equation}
+	\lambda_j^b = \inner
+	{\E[f_t(s)]}
+	{(\mathbb{P} g_{t-j})}
+	{Q^{-1}}
+\end{equation}
 \begin{equation}
 	 \Gamma_{i,i'}^a = \inner
-		{(\Psi_i f_{i})}
-		{(\Psi_{i'}^\top f_{i'})}
+		{(\mathbb{P} f_{i})}
+		{(\mathbb{P}^\top f_{i'})}
 		{Q^{-1}}
 \end{equation}
 \begin{equation}
 	\Gamma_{i,j'}^b = \inner
-		{(\Psi_j g_{j})}
-		{(\Psi_{j'}^\top g_{j'})}
+		{(\mathbb{P} g_{j})}
+		{(\mathbb{P}^\top g_{j'})}
 		{Q^{-1}}
 \end{equation}
 \begin{equation}
 	\Gamma_{i,j}^{ab} = \inner
-		{(\Psi_j f_{j})}
-		{(\Psi_{i'}^\top g_{j})}
+		{(\mathbb{P} f_{i})}
+		{(\mathbb{P}^\top g_{j})}
 		{Q^{-1}}
 \end{equation}
+This equation is of the form
+\begin{equation}
+	\E[\ell(\theta)] = \epsilon - \theta^\top \lambda + \theta^\top \Gamma \theta
+\end{equation}
+
 
 \todo{sort out hats!}
 
