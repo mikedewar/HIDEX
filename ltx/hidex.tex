@@ -247,7 +247,7 @@ The key insights here are:
 
 \subsection{EM Algorithm}
 
-The EM algorithm is a well known method for jointly estimating the state sequence and parameters of state space models. It is by no means the only method: subspace \ref{subspace review}, variational \ref{who} and sampling \ref{who} approaches are also popular in this context. Our aim here is to demonstrate that the model presented above can be estimated using \emph{standard} system identification techniques. It should be noted, however, that the EM algorithm lends itself naturally to the case where the system matrices are parameterised, and hence presents a good starting point for the identification of the HIDEX($p,q$) model.
+The EM algorithm is a well known method for jointly estimating the state sequence and parameters of state space models. It is by no means the only method: subspace \ref{subspace review}, variational-Bayes \ref{Hinton} and sampling \ref{Doucet} approaches are also popular in this context. Our aim here is to demonstrate that the model presented above can be estimated using \emph{standard} system identification techniques. It should be noted, however, that the EM algorithm lends itself naturally to the case where the system matrices are parameterised, and hence presents a good starting point for the identification of the HIDEX($p,q$) model.
 
 The EM algorithm in this context seeks to find the maximum likelihood parameter estimates 
 \begin{equation}
@@ -288,7 +288,7 @@ due to the fact that the expectation of the mean field $\hat{f}$ is itself, we c
 	- \frac{1}{2}\sum_t \dist{\hat{\yvec}_t}{R^{-1}}
 	\end{split}
 \end{equation}
-where $\epsilon$ has been abused somewhat to include additional terms that do not depend on the unknown parameters $\theta$. We will deal with both of these terms in turn, using the decompositions to write them explicitly in terms of the unknown parameters.
+where $\epsilon$ has been abused somewhat to include additional terms that do not depend on the unknown parameters $\theta$. We will deal with these two sets of terms in turn, using the decompositions to write them explicitly in terms of the unknown parameters.
 
 Firstly, we can substitute for $\hat{f}$, rewriting the first two terms in Equation \ref{eqn:exloglik} as
 \begin{equation}
@@ -355,6 +355,7 @@ and, under the decomposition given in Assumption \ref{ass:kerndecomp}, we can wr
 \end{equation}
 where we define a new operator $(\mathbb{P} f)(s) = \int_\mathcal{S}dr~\Psi(s,r)f_t(r)$. Hence it is straightforward to write the first term of \ref{eqn:exploglik} as
 \begin{equation}
+	\label{eqn:norm_x_error}
 	\begin{split}
 	\frac{1}{2}\sum_t\E[\dist{f_t(s) - \hat{f}_t(s)}{Q^{-1}}] = 
 		\sum_i a_i^\top \lambda^a_i + \sum_j b_j^\top \lambda^b_j \\
@@ -366,7 +367,7 @@ where we define a new operator $(\mathbb{P} f)(s) = \int_\mathcal{S}dr~\Psi(s,r)
 		b_j
 		\end{split}
 \end{equation}
-\todo{finish this off for $||y -\hat{y}||$}
+\todo{I've forgotten the $\sum_t$ somewhere but I think they can be moved into the definitions of the various lambdas and Gammas below...}
 where
 \begin{equation}
 	\lambda_i^a = \inner
@@ -398,11 +399,62 @@ where
 		{(\mathbb{P}^\top g_{j})}
 		{Q^{-1}}
 \end{equation}
-This equation is of the form
+
+We can write the second term \ref{eqn:exploglik} as quadratic in the unknonwn parameters $c$ following the same procedure: simply expand $\E[\dist{\yvec_t-\hat{\yvec}_t}{R^{-1}}]$ and apply the kernel decomposition given in Assumption \ref{ass:kerndecomp}. This gives
+\begin{equation}
+	\label{eqn:norm_y_error}
+	\E[\dist{\yvec_t-\hat{\yvec}_t}{R^{-1}}] = c^\top \lambda^c + c^\top \Gamma^c c
+\end{equation}
+where
+\begin{equation}
+	\lambda_c = \inner
+	{\E[y_t]}
+	{(\mathbb{P} y_t)}
+	{R^{-1}}
+\end{equation}
+\begin{equation}
+	 \Gamma^c = \inner
+		{(\mathbb{P} y_t)}
+		{(\mathbb{P}^\top y_t^\top)}
+		{R^{-1}}
+\end{equation}
+Together, \ref{eqn:norm_x_error} and \ref{eqn:norm_y_error} allow us to write the expected log likelihood in the quadratic form:
 \begin{equation}
 	\E[\ell(\theta)] = \epsilon - \theta^\top \lambda + \theta^\top \Gamma \theta
 \end{equation}
-
+where we concatenate the unknown parameters into the vector $\theta = [a_1^\top ~ a_2^\top ~ \ldots ~ a_p^\top ~ b_1^\top ~ b_2^\top ~ \ldots ~ b_q^\top ~ c^\top]^\top$ and similarly the linear coefficient into the vetor vector $\lambda = [\lambda^{a\top}_1 ~ \lambda^{a\top}_2 ~ \ldots ~ \lambda^{a\top}_p ~ \lambda^{b\top}_1 ~ \lambda^{b\top}_2 ~ \ldots ~ \lambda^{b\top}_q ~ \lambda^{c\top}]^\top$. The matrix $\Gamma$ is formed by simply arranging all the $\Gamma$-variables in a large matrix. To see this, let
+\begin{equation}
+	\Gamma^a = \begin{bmatrix}
+		\Gamma_{1,1}^a & \Gamma_{1,2}^a & \ldots & \Gamma_{1,q}^a \\
+		\Gamma_{2,1}^a & \Gamma_{2,2}^a &  &  \\
+		\vdots & & \ddots &  \\
+		\Gamma_{q,1}^a &  &  & \Gamma_{q,q}^a \\
+	\end{bmatrix}
+\end{equation}
+\begin{equation}
+	\Gamma^b = \begin{bmatrix}
+		\Gamma_{1,1}^b & \Gamma_{1,2}^b & \ldots & \Gamma_{1,q}^b \\
+		\Gamma_{2,1}^b & \Gamma_{2,2}^b &  &  \\
+		\vdots & & \ddots &  \\
+		\Gamma_{q,1}^b &  &  & \Gamma_{q,q}^b \\
+	\end{bmatrix}
+\end{equation}
+\begin{equation}
+	\Gamma^{ab} = \begin{bmatrix}
+		\Gamma_{1,1}^{ab} & \Gamma_{1,2}^{ab} & \ldots & \Gamma_{1,p}^{ab} \\
+		\Gamma_{1,2}^{ab} & \Gamma_{2,2}^{ab} &  &  \\
+		\vdots & & \ddots &  \\
+		\Gamma_{1,q}^{ab} &  &  & \Gamma_{p,q}^{ab} \\
+	\end{bmatrix}
+\end{equation}
+Given these matrices, we can write $\Gamma$ as 
+\begin{equation}
+	\Gamma = \begin{bmatrix}
+		\Gamma_a & \Gamma^{ab} & 0_{n\times n} \\
+		\Gamma^{ab\top} & \Gamma^{b} & 0_{n\times n} \\
+		0_{n\times n} & 0_{n\times n} & \Gamma_c
+	\end{bmatrix}
+\end{equation}
 
 \todo{sort out hats!}
 
