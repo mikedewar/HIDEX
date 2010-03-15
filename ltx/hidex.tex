@@ -190,16 +190,26 @@ where $a_i, b_j, c \in \R^{n_y}$ are the parameters of the kernels $F_i, G_j$ an
 As a notational convenience, we have used the same basis functions in the decomposition of both the hidden field $f$ and of the input field $g$. However, it is important to note that in practice we may have a control surface that is local in the space $\mathcal{S}$, and hence would benefit from a specific, tailored decomposition. 
 \end{remark}
 
-
+\begin{remark}
+	It is useful for what follows to note the effect that decomposing the field has on its distribution. By substituting \ref{eq:f decomp} into \ref{eqn:fdist}, we get
+	\begin{equation}
+		p(x_t\phi(s)) = \mathrm{GP}(\hat{x}\phi(s),Q(s,s))
+	\end{equation}
+	We can expand the left hand side trivially and, noting that we treat $\phi$ as a deterministic function:
+	 \begin{equation}
+		p(x_t|\phi(s))p(\phi(s)) = \mathrm{N}(\hat{x},\dist{\phi}{Q^{-1}})\delta(\phi(s))
+	\end{equation}
+	where $\delta$ is the Dirac measure and we use the property that any finite sample of a Gaussian Process is normally distributed. Here the covariance matrix is found somehow \todo{How to prove this is the cov?}
+\end{remark}
 
 \section{Parameter Estimation}
 
-We follow the standard derivation of the EM algorithm \cite{Ninness}. We first derive the maximum likelihood estimate of the parameters given distributions over the hidden field. We then show how to update the distributions over the hidden field given estimates of the parameters. 
+In order to estiamte the shape of the spatial mixing kernels, we apply the EM algorithm, following the derivation given in \cite{GibsonNinness}. We first derive the E-step, giving an expression for the distribution of the field at each point in time. We then derive the M-step, giving an analytical maximum of the resulting function.
 
 The key insights here are:
 \begin{itemize}
-	\item we can represent the expected log likelihood function for the HIDEX($p,q$) model as a quadratic in the weights of the decomposed spatial mixing kernels
-	\item given a set of parameters, generating distributions over the hidden field becomes a straightforward application of the Rauch-Tung-Streibel smoother \cite{Rauch}.
+	\item we can represent the expected log likelihood function for the HIDEX($p,q$) model as a quadratic in the weights of the spatial mixing kernel decompositions,
+	\item generating distributions over the hidden field becomes a straightforward application of the Rauch-Tung-Streibel smoother \cite{Rauch} under the field decompositions.
 \end{itemize} 
 
 \subsection{EM Algorithm}
@@ -240,33 +250,26 @@ Using the decomposition of the fields $f_t(s)$ and $g_t(s)$ given in Assumption 
 	\phi(s)^\top\hat{\xvec}_t = \sum_{i=1}^{p}(\F_i \phi)(s)\xvec_{t-i} + \sum_{j=1}^{q}(\G_j\phi)(s)\uvec_{t-j}
 \end{equation}
 \todo{We don't need to decompose the kernels here!!!! This really rocks: the E-step involves the decomposition of the field; the M-step involves the decomposition of the kernel. I don't know how this helps, apart from shortening the paper, but it's certainly beautiful!}
-Using the decomposition of the spatial mixing kernels $F_i(s,s')$ and $G_j(s,s')$ given in Assumption \ref{ass:kerndecomp} we can expand the integral operators $\mathbb{F}$ and $\mathbb{G}$, giving 
+
+To achieve an expression for $\hat{\xvec}_t$ we pre-multiply both sides by $\phi(s)$ and integrate over space, giving
 \begin{equation}
-	\phi(s)^\top\hat{\xvec}_t =  \sum_{i=1}^{p} a_i^\top \Psi(s) \xvec_{t-i} + \sum_{j=1}^{q} b_j^\top \Psi(s) \uvec_{t-j}
-\end{equation}
-where 
-\begin{equation}
-	\Psi(s) = \int_\mathcal{S}ds' \psi(s,s') \phi(s')
-\end{equation}
-Finally, to achieve an expression for $\hat{\xvec}_t$ we pre-multiply both sides by $\phi(s)$ and integrate over space, giving
-\begin{equation}
-	\hat{\xvec}_t = \Phi^{-1} \int_\mathcal{S}ds \phi(s)\left(\sum_{i=1}^{p} a_i^\top \Psi(s) \xvec_{t-i} + \sum_{j=1}^{q} b_j^\top \Psi(s) \uvec_{t-j}\right)
+	\hat{\xvec}_t = \Phi^{-1} \int_\mathcal{S}ds \phi(s)\left(\sum_{i=1}^{p}(\F_i \phi)(s)\xvec_{t-i} + \sum_{j=1}^{q}(\G_j\phi)(s)\uvec_{t-j}\right)
 \end{equation}
 where $\Phi = \int_\mathcal{S}ds\phi(s)\phi(s)^\top$.
 
 \begin{remark}
 	By defining the following matrices
 	\begin{equation}
-		A_i = \Phi^{-1} \int_\mathcal{S}ds \phi(s) a_i^\top \Psi(s)
+		A_i = \Phi^{-1} \dist{\phi(s)}{F_i}
 	\end{equation}
 	\begin{equation}
-		B_j = \Phi^{-1} \int_\mathcal{S}ds \phi(s) b_j^\top \Psi(s)
+		B_j = \Phi^{-1} \dist{\phi(s)}{G_j}
 	\end{equation}
 	we can write an expression for $\hat{x}$ in multivariate ARX($p,q$) \cite{Ljung} form:
 	\begin{equation}
 		\hat{\xvec}_t = \sum_{i=1}^{p} A_i^\top \xvec_{t-i} +  \sum_{j=1}^{q} B_j^\top \uvec_{t-j}
 	\end{equation}
-	making clear the effect of the decomposition on the HIDEX model in Definition \ref{def:hidex}: we are representing an infinite dimensional spatiotemporal model using a finite (although probably high) dimensional vector autoregressive model with exogenous inputs, via a basis function decomposition. The key to this approach is that, unlike standard vector autoregressive models, the number of field basis functions $n_x$, is independent to the number of parameters in $a_i$ or $b_j$. Therefore we can increase the spatial resolution, or spatial extent, of our model without generating more parameters to learn.
+	making clear the effect of the decomposition on the HIDEX model in Definition \ref{def:hidex}: we are representing an infinite dimensional spatiotemporal model using a finite (although probably high) dimensional vector autoregressive model with exogenous inputs, via a basis function decomposition of the field. The key to this approach is that, unlike standard vector autoregressive models, the number of field basis functions $n_x$, is independent to the complexity of $F_i$ or $G_j$. Therefore we can increase the spatial resolution, or spatial extent, of our model without generating more parameters to learn.
 \end{remark}
 
 \subsection{M-step}
@@ -396,7 +399,7 @@ where
 		{Q^{-1}}
 \end{equation}
 \begin{equation}
-	\Gamma_{i,j'}^b = \inner
+	\Gamma_{j,j'}^b = \inner
 		{(\mathbb{P} g_{j})}
 		{(\mathbb{P}^\top g_{j'})}
 		{Q^{-1}}
@@ -428,39 +431,24 @@ where
 \end{equation}
 Together, \ref{eqn:norm_x_error} and \ref{eqn:norm_y_error} allow us to write the expected log likelihood in the quadratic form:
 \begin{equation}
-	\E[\ell(\theta)] = \epsilon - \theta^\top \lambda + \theta^\top \Gamma \theta
+	\E[\ell(\theta)] = \epsilon - \boldsymbol{\theta}^\top \boldsymbol{\lambda} + \boldsymbol{\theta}^\top \boldsymbol{\Gamma} \boldsymbol{\theta}
 \end{equation}
-where we concatenate the unknown parameters into the vector $\theta = [a_1^\top ~ a_2^\top ~ \ldots ~ a_p^\top ~ b_1^\top ~ b_2^\top ~ \ldots ~ b_q^\top ~ c^\top]^\top$ and similarly the linear coefficient into the vetor vector $\lambda = [\lambda^{a\top}_1 ~ \lambda^{a\top}_2 ~ \ldots ~ \lambda^{a\top}_p ~ \lambda^{b\top}_1 ~ \lambda^{b\top}_2 ~ \ldots ~ \lambda^{b\top}_q ~ \lambda^{c\top}]^\top$. The matrix $\Gamma$ is formed by simply arranging all the $\Gamma$-variables in a large matrix. To see this, let
+where we concatenate the unknown parameters into the vector $\boldsymbol{\theta} = [a_1^\top ~ a_2^\top ~ \ldots ~ a_p^\top ~ b_1^\top ~ b_2^\top ~ \ldots ~ b_q^\top ~ c^\top]^\top$ and similarly the linear coefficient into the vetor vector $\boldsymbol{\lambda} = [\lambda^{a\top}_1 ~ \lambda^{a\top}_2 ~ \ldots ~ \lambda^{a\top}_p ~ \lambda^{b\top}_1 ~ \lambda^{b\top}_2 ~ \ldots ~ \lambda^{b\top}_q ~ \lambda^{c\top}]^\top$. The matrix $\Gamma$ is formed by simply arranging all the $\Gamma$-variables in a large matrix. To see this, let 
 \begin{equation}
-	\Gamma^a = \begin{bmatrix}
-		\Gamma_{1,1}^a & \Gamma_{1,2}^a & \ldots & \Gamma_{1,q}^a \\
-		\Gamma_{2,1}^a & \Gamma_{2,2}^a &  &  \\
-		\vdots & & \ddots &  \\
-		\Gamma_{q,1}^a &  &  & \Gamma_{q,q}^a \\
-	\end{bmatrix}
+	[\boldsymbol{\Gamma}^a]_{i,i'} = \Gamma_{i,i'}^a 
 \end{equation}
 \begin{equation}
-	\Gamma^b = \begin{bmatrix}
-		\Gamma_{1,1}^b & \Gamma_{1,2}^b & \ldots & \Gamma_{1,q}^b \\
-		\Gamma_{2,1}^b & \Gamma_{2,2}^b &  &  \\
-		\vdots & & \ddots &  \\
-		\Gamma_{q,1}^b &  &  & \Gamma_{q,q}^b \\
-	\end{bmatrix}
+	[\boldsymbol{\Gamma}^b]_{j,j'} = \Gamma_{j,j'}^b 
 \end{equation}
 \begin{equation}
-	\Gamma^{ab} = \begin{bmatrix}
-		\Gamma_{1,1}^{ab} & \Gamma_{1,2}^{ab} & \ldots & \Gamma_{1,p}^{ab} \\
-		\Gamma_{1,2}^{ab} & \Gamma_{2,2}^{ab} &  &  \\
-		\vdots & & \ddots &  \\
-		\Gamma_{1,q}^{ab} &  &  & \Gamma_{p,q}^{ab} \\
-	\end{bmatrix}
+	[\boldsymbol{\Gamma}^{ab}]_{i,j} = \Gamma_{i,j}^{ab}
 \end{equation}
-Given these matrices, we can write $\Gamma$ as 
+for $i,i' = 1 \ldots p$ and $j,j' = 1 \ldots q$ where the notation $[\boldsymbol{\Gamma}]_{i,j}$ denotes the $(i,j)^\mathrm{th}$ block of the matrix $\boldsymbol{\Gamma}$. Given these matrices, we can write $\boldsymbol{\Gamma}$ as 
 \begin{equation}
-	\Gamma = \begin{bmatrix}
-		\Gamma_a & \Gamma^{ab} & 0_{n\times n} \\
-		\Gamma^{ab\top} & \Gamma^{b} & 0_{n\times n} \\
-		0_{n\times n} & 0_{n\times n} & \Gamma_c
+	\boldsymbol{\Gamma} = \begin{bmatrix}
+		\boldsymbol{\Gamma}^a & \boldsymbol{\Gamma}^{ab} & 0_{n\times n} \\
+		\boldsymbol{\Gamma}^{ab\top} & \boldsymbol{\Gamma}^{b} & 0_{n\times n} \\
+		0_{n\times n} & 0_{n\times n} & \boldsymbol{\Gamma}_c
 	\end{bmatrix}
 \end{equation}
 
