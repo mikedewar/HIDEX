@@ -186,54 +186,11 @@ where $\xvec_t \in \R^{n_x}$ is a vector of unknown weights, referred to as the 
 where $a_i, b_j, c \in \R^{n_y}$ are the parameters of the kernels $F_i, G_j$ and $H$ respectively. Here $\psi(s,s') : \mathbb{R}^{n_\mathcal{S}} \times \mathbb{R}^{n_\mathcal{S}} \onto \mathbb{R}$ is a vector of basis functions drawn from the spanning set thingy.
 \end{assumption}
 
-Under the decomposition (\ref{eq:f decomp}) we can rewrite 
-\begin{equation}
-	\dist{f_t(s) - \hat{f}_t(s)}{Q^{-1}} = \dist{\xvec_t - \hat{\xvec}_t}{\Xi}
-\end{equation}
-where $\Xi = \int\int ds' ds ~ \phi(s')Q^{-1}(s',s)\phi(s)^\top$. Here the vector $\xvec_t \in \R^{n_x}$ weights a vector of basis functions $\phi(s)$ that together decompose the current field $f_t(s)$, and similarly $\hat{\xvec}_t \in \R^{n_x}$ weights the decomposition of $\hat{f}(s)$. This allows us to replace the infinite dimensional term in the likelihood with a finite dimensional term via the decomposition, giving
-\begin{equation}
-	\ell(\theta) =  \epsilon  - \frac{1}{2}\dist{\xvec_t - \hat{\xvec}_t}{\Xi} - \frac{1}{2}\dist{\yvec_t-\hat{\yvec_t}}{R^{-1}}
-\end{equation}
-\todo{Can I say that this is convex in $\hat{x}$ and $\hat{y}$?}
-Recall that
-\begin{equation}
-	\hat{f}_t(s) = \sum_{i=1}^{p}( \F_i f_{t-i})(s) + \sum_{j=1}^{q}(\G_j g_{t-j})(s)
-\end{equation}
-Using the decomposition of the fields $f_t(s)$ and $g_t(s)$ given in Assumption \ref{ass:fielddecomp} this can be re-written
-\begin{equation}
-	\phi(s)^\top\hat{\xvec}_t = \sum_{i=1}^{p}(\F_i \phi)(s)\xvec_{t-i} + \sum_{j=1}^{q}(\G_j\phi)(s)\uvec_{t-j}
-\end{equation}
-Using the decomposition of the spatial mixing kernels $F_i(s,s')$ and $G_j(s,s')$ given in Assumption \ref{ass:kerndecomp} we can expand the integral operators $\mathbb{F}$ and $\mathbb{G}$, giving 
-\begin{equation}
-	\phi(s)^\top\hat{\xvec}_t =  \sum_{i=1}^{p} a_i^\top \Psi(s) \xvec_{t-i} + \sum_{j=1}^{q} b_j^\top \Psi(s) \uvec_{t-j}
-\end{equation}
-where 
-\begin{equation}
-	\Psi(s) = \int_\mathcal{S}ds' \psi(s,s') \phi(s')
-\end{equation}
-Finally, to achieve an expression for $\hat{\xvec}_t$ we pre-multiply both sides by $\phi(s)$ and integrate over space, giving
-\begin{equation}
-	\hat{\xvec}_t = \Phi^{-1} \int_\mathcal{S}ds \phi(s)\left(\sum_{i=1}^{p} a_i^\top \Psi(s) \xvec_{t-i} + \sum_{j=1}^{q} b_j^\top \Psi(s) \uvec_{t-j}\right)
-\end{equation}
-where $\Phi = \int_\mathcal{S}ds\phi(s)\phi(s)^\top$.
 \begin{remark}
 As a notational convenience, we have used the same basis functions in the decomposition of both the hidden field $f$ and of the input field $g$. However, it is important to note that in practice we may have a control surface that is local in the space $\mathcal{S}$, and hence would benefit from a specific, tailored decomposition. 
 \end{remark}
 
-\begin{remark}
-	By defining the following matrices
-	\begin{equation}
-		A_i = \Phi^{-1} \int_\mathcal{S}ds \phi(s) a_i^\top \Psi(s)
-	\end{equation}
-	\begin{equation}
-		B_j = \Phi^{-1} \int_\mathcal{S}ds \phi(s) b_j^\top \Psi(s)
-	\end{equation}
-	we can write an expression for $\hat{x}$ in multivariate ARX($p,q$) \cite{Ljung} form:
-	\begin{equation}
-		\hat{\xvec}_t = \sum_{i=1}^{p} A_i^\top \xvec_{t-i} +  \sum_{j=1}^{q} B_j^\top \uvec_{t-j}
-	\end{equation}
-	making clear the effect of the decomposition on the HIDEX model in Definition \ref{def:hidex}: we are representing an infinite dimensional spatiotemporal model using a finite (although probably high) dimensional vector autoregressive model with exogenous inputs, via a basis function decomposition. The key to this approach is that, unlike standard vector autoregressive models, the number of field basis functions $n_x$, is independent to the number of parameters in $a_i$ or $b_j$. Therefore we can increase the spatial resolution, or spatial extent, of our model without generating more parameters to learn.
-\end{remark}
+
 
 \section{Parameter Estimation}
 
@@ -260,6 +217,57 @@ The EM algorithm achieves this by maximising a lower bound on the log likelihood
 	\mathcal{Q}(\theta,\theta')=\E_{\theta'}\left[\ln p(X,Y;\theta)\right]
 \end{equation}
 where $\E_{\theta'}[\cdot]$ denotes expectation taken with respect to the distribution $\p(X|Y ; \theta')$ where $\theta'$ is the current parameter estimate. In this context \cite{Gibson05}, the algorithm consists of two steps: the E-step performs the expectation using the standard Rauch-Tung-Streibel (RTS) smoother \cite{Rauch65} producing the expected state sequence and therefore leading to a deterministic $\mathcal{Q}$-function which is a quadratic in $\theta$. The M-step finds the updated parameter estimate by maximising this quadratic.
+
+\subsection{E-step}
+
+The E-step involves forming the expectation in $Q(\theta,\theta')$, which is equivalent to find the distribution over the field $f_t$ given all the data $Y$ and the current kernel estimates $\theta'$. We demonstrate that, using the field decompositions in Assumption \ref{ass:fielddecomp}, this distribution is provided by the RTS smoother. 
+
+Under the decomposition (\ref{eq:f decomp}) we can rewrite 
+\begin{equation}
+	\dist{f_t(s) - \hat{f}_t(s)}{Q^{-1}} = \dist{\xvec_t - \hat{\xvec}_t}{\Xi}
+\end{equation}
+where $\Xi = \int\int ds' ds ~ \phi(s')Q^{-1}(s',s)\phi(s)^\top$. Here the vector $\xvec_t \in \R^{n_x}$ weights a vector of basis functions $\phi(s)$ that together decompose the current field $f_t(s)$, and similarly $\hat{\xvec}_t \in \R^{n_x}$ weights the decomposition of $\hat{f}(s)$. This allows us to replace the infinite dimensional term in the likelihood with a finite dimensional term via the decomposition, giving
+\begin{equation}
+	\ell(\theta) =  \epsilon  - \frac{1}{2}\dist{\xvec_t - \hat{\xvec}_t}{\Xi} - \frac{1}{2}\dist{\yvec_t-\hat{\yvec_t}}{R^{-1}}
+\end{equation}
+\todo{Can I say that this is convex in $\hat{x}$ and $\hat{y}$?}
+Recall that
+\begin{equation}
+	\hat{f}_t(s) = \sum_{i=1}^{p}( \F_i f_{t-i})(s) + \sum_{j=1}^{q}(\G_j g_{t-j})(s)
+\end{equation}
+Using the decomposition of the fields $f_t(s)$ and $g_t(s)$ given in Assumption \ref{ass:fielddecomp} this can be re-written
+\begin{equation}
+	\phi(s)^\top\hat{\xvec}_t = \sum_{i=1}^{p}(\F_i \phi)(s)\xvec_{t-i} + \sum_{j=1}^{q}(\G_j\phi)(s)\uvec_{t-j}
+\end{equation}
+\todo{We don't need to decompose the kernels here!!!! This really rocks: the E-step involves the decomposition of the field; the M-step involves the decomposition of the kernel. I don't know how this helps, apart from shortening the paper, but it's certainly beautiful!}
+Using the decomposition of the spatial mixing kernels $F_i(s,s')$ and $G_j(s,s')$ given in Assumption \ref{ass:kerndecomp} we can expand the integral operators $\mathbb{F}$ and $\mathbb{G}$, giving 
+\begin{equation}
+	\phi(s)^\top\hat{\xvec}_t =  \sum_{i=1}^{p} a_i^\top \Psi(s) \xvec_{t-i} + \sum_{j=1}^{q} b_j^\top \Psi(s) \uvec_{t-j}
+\end{equation}
+where 
+\begin{equation}
+	\Psi(s) = \int_\mathcal{S}ds' \psi(s,s') \phi(s')
+\end{equation}
+Finally, to achieve an expression for $\hat{\xvec}_t$ we pre-multiply both sides by $\phi(s)$ and integrate over space, giving
+\begin{equation}
+	\hat{\xvec}_t = \Phi^{-1} \int_\mathcal{S}ds \phi(s)\left(\sum_{i=1}^{p} a_i^\top \Psi(s) \xvec_{t-i} + \sum_{j=1}^{q} b_j^\top \Psi(s) \uvec_{t-j}\right)
+\end{equation}
+where $\Phi = \int_\mathcal{S}ds\phi(s)\phi(s)^\top$.
+
+\begin{remark}
+	By defining the following matrices
+	\begin{equation}
+		A_i = \Phi^{-1} \int_\mathcal{S}ds \phi(s) a_i^\top \Psi(s)
+	\end{equation}
+	\begin{equation}
+		B_j = \Phi^{-1} \int_\mathcal{S}ds \phi(s) b_j^\top \Psi(s)
+	\end{equation}
+	we can write an expression for $\hat{x}$ in multivariate ARX($p,q$) \cite{Ljung} form:
+	\begin{equation}
+		\hat{\xvec}_t = \sum_{i=1}^{p} A_i^\top \xvec_{t-i} +  \sum_{j=1}^{q} B_j^\top \uvec_{t-j}
+	\end{equation}
+	making clear the effect of the decomposition on the HIDEX model in Definition \ref{def:hidex}: we are representing an infinite dimensional spatiotemporal model using a finite (although probably high) dimensional vector autoregressive model with exogenous inputs, via a basis function decomposition. The key to this approach is that, unlike standard vector autoregressive models, the number of field basis functions $n_x$, is independent to the number of parameters in $a_i$ or $b_j$. Therefore we can increase the spatial resolution, or spatial extent, of our model without generating more parameters to learn.
+\end{remark}
 
 \subsection{M-step}
 
