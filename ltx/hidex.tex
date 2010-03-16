@@ -147,11 +147,11 @@ for functions and similarly
 \begin{equation}
 	\dist{y}{R} = y^\top Ry
 \end{equation}
-for vectors, we can substitute Equations \ref{eqn:ydist} and \ref{eqn:fdist} into the log likelihood \ref{eqn:loglik} to get an equation in terms of $\theta$ which we can consider maximising 
+for vectors, we can substitute Equations \ref{eqn:ydist} and \ref{eqn:fdist} into the log likelihood \ref{eqn:loglik} to get:
 \begin{equation}
 	\ell(\theta) =  \epsilon  - \frac{1}{2}\sum_t\dist{f_t(s) - \hat{f}_t(s)}{Q^{-1}} - \frac{1}{2}\sum_t\dist{\yvec_t-\hat{\yvec_t}}{R^{-1}}
 \end{equation}
-where $\epsilon$ collects together all the terms that do not depend on (any element of) $\theta$. We will abuse $\epsilon$ in what follows, using it to indicate terms which do not depend on $\theta$.
+where $\epsilon$ collects together all the terms that do not depend on (any element of) $\theta$.
 
 \subsection{Decomposition}
 
@@ -193,13 +193,17 @@ As a notational convenience, we have used the same basis functions in the decomp
 \begin{remark}
 	It is useful for what follows to note the effect that decomposing the field has on its distribution. By substituting \ref{eq:f decomp} into \ref{eqn:fdist}, we get
 	\begin{equation}
-		p(x_t\phi(s)) = \mathrm{GP}(\hat{x}\phi(s),Q(s,s))
+		p(x_t\phi(s)) = \mathrm{GP}(\hat{x}^\top\phi(s),Q(s,s))
 	\end{equation}
 	We can expand the left hand side trivially and, noting that we treat $\phi$ as a deterministic function:
 	 \begin{equation}
-		p(x_t|\phi(s))p(\phi(s)) = \mathrm{N}(\hat{x},\dist{\phi}{Q^{-1}})\delta(\phi(s))
+		p(x_t|\phi(s))p(\phi(s)) = \mathrm{N}(\hat{x},\Sigma_w)\delta(\phi(s))
 	\end{equation}
-	where $\delta$ is the Dirac measure and we use the property that any finite sample of a Gaussian Process is normally distributed. Here the covariance matrix is found somehow \todo{How to prove this is the cov?}
+	where $\delta$ is the Dirac measure and we use the property that any finite sample from a Gaussian Process is normally distributed. Here the covariance matrix is given by
+	\begin{equation}
+		\Sigma_w = \Phi^{-1}\dist{\phi}{Q} \Phi^{-1}
+	\end{equation}
+	which follows directly by substituting $f_t(s) = x_t^\top\phi(s)$ into the definition of the covariance function $Q(s,s')$.
 \end{remark}
 
 \section{Parameter Estimation}
