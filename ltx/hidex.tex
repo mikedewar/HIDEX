@@ -60,7 +60,7 @@
 \section{The HIDEX($p,q$) Model}
 \label{sec:model}
 
-The model is defined across spatial locations $s \in \mathcal{S} \subset \mathbb{R}^{n_\mathcal{S}}$ and at times $t \in \mathbb{Z}_+$. Here $n_\mathcal{S} \in \{1,2,3\}$ is the spatial dimension of the system under study, and, as time is always one dimensional, it is $n_\mathcal{S}$ that we use to describe the dimension of the model. 
+The model is defined across spatial locations $s \in \mathcal{S} = \mathbb{R}^{n_\mathcal{S}}$ and at times $t \in \mathbb{Z}_+$. Here $n_\mathcal{S} \in \{1,2,3\}$ is the spatial dimension of the system under study, and, as time is always one dimensional, it is $n_\mathcal{S}$ that we use to describe the dimension of the model. 
 
 \begin{definition}[Spatial Mixing Kernel]
 	Let $\mathcal{S}$ denote an $n_\mathcal{S}$-dimensional physical space and $f_t(s): \mathbb{R}^{n_\mathcal{S}} \onto \mathbb{R}$ denote the spatial field across space $s \in \mathcal{S}$ at time $t \in \mathbb{Z}_+$. The kernel $k(s,r): \mathbb{R}^{n_\mathcal{S}} \times \mathbb{R}^{n_\mathcal{S}} \onto \mathbb{R}$ of the integral operator
@@ -188,6 +188,10 @@ where $a_i, b_j, c \in \R^{n_y}$ are the parameters of the kernels $F_i, G_j$ an
 \end{assumption}
 
 \begin{remark}
+	The above assumptions may break down if $\mathcal{S}$ is defined as a subset of $\mathbb{R}^{n_\mathcal{S}}$ as the fields would then no longer be band limited due to the discontinuity at the edges of $\mathcal{S}$. It is worth noting that while we represent the field over an infinite space, the representation will be largely uninformative outside the observed region of interest. If we use local basis functions, such as squared exponential bases, then the representation of the field away from the centres of the bases will be described almost completely by the properties of the disturbance process.
+\end{remark}
+
+\begin{remark}
 As a notational convenience, we have used the same basis functions in the decomposition of both the hidden field $f$ and of the input field $g$. However, it is important to note that in practice we may have a control surface that is local in the space $\mathcal{S}$, and hence would benefit from a specific, tailored decomposition. 
 \end{remark}
 
@@ -204,7 +208,7 @@ As a notational convenience, we have used the same basis functions in the decomp
 	\begin{equation}
 		\Sigma_w = \Phi^{-1}\dist{\phi}{Q} \Phi^{-1}
 	\end{equation}
-	which follows directly by substituting $f_t(s) = x_t^\top\phi(s)$ into the definition of the covariance function $Q(s,s')$.
+	which follows directly by substituting $f_t(s) = x_t^\top\phi(s)$ into the definition of the covariance function $Q(s,s')$ \cite{Scerri09}.
 \end{remark}
 
 \section{Parameter Estimation}
