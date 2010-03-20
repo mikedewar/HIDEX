@@ -254,23 +254,23 @@ Recall that
 \end{equation}
 Using the decomposition of the fields $f_t(s)$ and $g_t(s)$ given in Assumption \ref{ass:fielddecomp} this can be re-written
 \begin{equation}
-	\phi(s)^\top\hat{\xvec}_t = \sum_{i=1}^{p}(\F_i \phi)(s)\xvec_{t-i} + \sum_{j=1}^{q}(\G_j\phi)(s)\uvec_{t-j}
+	\phi(s)^\top\hat{\xvec}_t = \sum_{i=1}^{p}(\F_i \phi^\top)(s)\xvec_{t-i} + \sum_{j=1}^{q}(\G_j\phi^\top)(s)\uvec_{t-j}
 \end{equation}
 \todo{We don't need to decompose the kernels here!!!! This really rocks: the E-step involves the decomposition of the field; the M-step involves the decomposition of the kernel. I don't know how this helps, apart from shortening the paper, but it's certainly beautiful!}
 
 To achieve an expression for $\hat{\xvec}_t$ we pre-multiply both sides by $\phi(s)$ and integrate over space, giving
 \begin{equation}
-	\hat{\xvec}_t = \Phi^{-1} \int_\mathcal{S}ds \phi(s)\left(\sum_{i=1}^{p}(\F_i \phi)(s)\xvec_{t-i} + \sum_{j=1}^{q}(\G_j\phi)(s)\uvec_{t-j}\right)
+	\hat{\xvec}_t = \Phi^{-1} \int_\mathcal{S}ds \phi(s)\left(\sum_{i=1}^{p}(\F_i \phi^\top)(s)\xvec_{t-i} + \sum_{j=1}^{q}(\G_j\phi^\top)(s)\uvec_{t-j}\right)
 \end{equation}
 where $\Phi = \int_\mathcal{S}ds\phi(s)\phi(s)^\top$.
 
 \begin{remark}
 	By defining the following matrices
 	\begin{equation}
-		A_i = \Phi^{-1} \dist{\phi(s)}{F_i}
+		A_i = \Phi^{-1} \inner{\phi(s)}{\phi^\top(s)}{F_i}
 	\end{equation}
 	\begin{equation}
-		B_j = \Phi^{-1} \dist{\phi(s)}{G_j}
+		B_j = \Phi^{-1} \inner{\phi(s)}{\phi^\top(s)}{G_j}
 	\end{equation}
 	we can write an expression for $\hat{x}$ in multivariate ARX($p,q$) \cite{Ljung} form:
 	\begin{equation}
@@ -371,12 +371,12 @@ and, under the decomposition given in Assumption \ref{ass:kerndecomp}, we can wr
 		{(\mathbb{P}^\top f_{t-i'}) }
 		{Q^{-1}} a_i
 \end{equation}
-where we define a new operator $(\mathbb{P} f)(s) = \int_\mathcal{S}dr~\Psi(s,r)f_t(r)$. Hence it is straightforward to write the first term of \ref{eqn:exploglik} as
+where we define a new operator $(\mathbb{P} f)(s) = \int_\mathcal{S}dr~\psi(s,r)f_t(r)$. Hence it is straightforward to write the first term of \ref{eqn:exploglik} as
 \begin{equation}
 	\label{eqn:norm_x_error}
 	\begin{split}
 	\frac{1}{2}\sum_t\E[\dist{f_t(s) - \hat{f}_t(s)}{Q^{-1}}] = 
-		\sum_i a_i^\top \lambda^a_i + \sum_j b_j^\top \lambda^b_j \\
+		\sum_i a_i^\top \gamma^a_i + \sum_j b_j^\top \gamma^b_j \\
 		+ \sum_i\sum_{i'}a_i^\top \Gamma_{i,i'}^a
 		a_{i'} 
 		+ \sum_j\sum_{j'}b_j^\top \Gamma_{i,j'}^b
@@ -388,44 +388,44 @@ where we define a new operator $(\mathbb{P} f)(s) = \int_\mathcal{S}dr~\Psi(s,r)
 \todo{I've forgotten the $\sum_t$ somewhere but I think they can be moved into the definitions of the various lambdas and Gammas below...}
 where
 \begin{equation}
-	\lambda_i^a = \inner
+	\gamma_i^a = \inner
 	{\E[f_t(s)]}
 	{(\mathbb{P} f_{t-i})}
 	{Q^{-1}}
 \end{equation}
 \begin{equation}
-	\lambda_j^b = \inner
+	\gamma_j^b = \inner
 	{\E[f_t(s)]}
 	{(\mathbb{P} g_{t-j})}
 	{Q^{-1}}
 \end{equation}
 \begin{equation}
 	 \Gamma_{i,i'}^a = \inner
-		{(\mathbb{P} f_{i})}
-		{(\mathbb{P}^\top f_{i'})}
+		{(\mathbb{P} f_{t-i})}
+		{(\mathbb{P}^\top f_{t-i'})}
 		{Q^{-1}}
 \end{equation}
 \begin{equation}
 	\Gamma_{j,j'}^b = \inner
-		{(\mathbb{P} g_{j})}
-		{(\mathbb{P}^\top g_{j'})}
+		{(\mathbb{P} g_{t-j})}
+		{(\mathbb{P}^\top g_{t-j'})}
 		{Q^{-1}}
 \end{equation}
 \begin{equation}
 	\Gamma_{i,j}^{ab} = \inner
-		{(\mathbb{P} f_{i})}
-		{(\mathbb{P}^\top g_{j})}
+		{(\mathbb{P} f_{t-i})}
+		{(\mathbb{P}^\top g_{t-j})}
 		{Q^{-1}}
 \end{equation}
 
 We can write the second term \ref{eqn:exploglik} as quadratic in the unknonwn parameters $c$ following the same procedure: simply expand $\E[\dist{\yvec_t-\hat{\yvec}_t}{R^{-1}}]$ and apply the kernel decomposition given in Assumption \ref{ass:kerndecomp}. This gives
 \begin{equation}
 	\label{eqn:norm_y_error}
-	\E[\dist{\yvec_t-\hat{\yvec}_t}{R^{-1}}] = c^\top \lambda^c + c^\top \Gamma^c c
+	\E[\dist{\yvec_t-\hat{\yvec}_t}{R^{-1}}] = c^\top \gamma^c + c^\top \Gamma^c c
 \end{equation}
 where
 \begin{equation}
-	\lambda_c = \inner
+	\gamma_c = \inner
 	{\E[y_t]}
 	{(\mathbb{P} y_t)}
 	{R^{-1}}
@@ -438,9 +438,9 @@ where
 \end{equation}
 Together, \ref{eqn:norm_x_error} and \ref{eqn:norm_y_error} allow us to write the expected log likelihood in the quadratic form:
 \begin{equation}
-	\E[\ell(\theta)] = \epsilon - \boldsymbol{\theta}^\top \boldsymbol{\lambda} + \boldsymbol{\theta}^\top \boldsymbol{\Gamma} \boldsymbol{\theta}
+	\E[\ell(\theta)] = \epsilon - \boldsymbol{\theta}^\top \boldsymbol{\gamma} + \boldsymbol{\theta}^\top \boldsymbol{\Gamma} \boldsymbol{\theta}
 \end{equation}
-where we concatenate the unknown parameters into the vector $\boldsymbol{\theta} = [a_1^\top ~ a_2^\top ~ \ldots ~ a_p^\top ~ b_1^\top ~ b_2^\top ~ \ldots ~ b_q^\top ~ c^\top]^\top$ and similarly the linear coefficient into the vetor vector $\boldsymbol{\lambda} = [\lambda^{a\top}_1 ~ \lambda^{a\top}_2 ~ \ldots ~ \lambda^{a\top}_p ~ \lambda^{b\top}_1 ~ \lambda^{b\top}_2 ~ \ldots ~ \lambda^{b\top}_q ~ \lambda^{c\top}]^\top$. The matrix $\Gamma$ is formed by simply arranging all the $\Gamma$-variables in a large matrix. To see this, let 
+where we concatenate the unknown parameters into the vector $\boldsymbol{\theta} = [a_1^\top ~ a_2^\top ~ \ldots ~ a_p^\top ~ b_1^\top ~ b_2^\top ~ \ldots ~ b_q^\top ~ c^\top]^\top$ and similarly the linear coefficient into the vetor vector $\boldsymbol{\gamma} = [\gamma^{a\top}_1 ~ \gamma^{a\top}_2 ~ \ldots ~ \gamma^{a\top}_p ~ \gamma^{b\top}_1 ~ \gamma^{b\top}_2 ~ \ldots ~ \gamma^{b\top}_q ~ \gamma^{c\top}]^\top$. The matrix $\Gamma$ is formed by simply arranging all the $\Gamma$-variables in a large matrix. To see this, let 
 \begin{equation}
 	[\boldsymbol{\Gamma}^a]_{i,i'} = \Gamma_{i,i'}^a 
 \end{equation}
@@ -462,7 +462,5 @@ for $i,i' = 1 \ldots p$ and $j,j' = 1 \ldots q$ where the notation $[\boldsymbol
 \todo{sort out hats!}
 
 \newpage
-
-\todo{Remark somewhere at the end about how big an assumption is that we can perform the decomposition - referencing Scerri 09}
 
 \end{document}
