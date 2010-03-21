@@ -1,6 +1,4 @@
-from kernel import Kernel
-from field import Field
-from basisfunction import BasisFunction
+from HIDEX_elements import Field, Kernel, BasisFunction
 import numpy as np
 
 def inner(A,B,C=None):
