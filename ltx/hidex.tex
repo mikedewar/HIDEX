@@ -190,7 +190,7 @@ where $a_i, b_j, c \in \R^{n_y}$ are the parameters of the kernels $F_i, G_j$ an
 \end{remark}
 
 \begin{remark}
-As a notational convenience, we have used the same basis functions in the decomposition of both the hidden field $f$ and of the input field $g$. However, it is important to note that in practice we may have a control surface that is local in the space $\mathcal{S}$, and hence would benefit from a specific, tailored decomposition. 
+As a notational convenience, we have used the same basis functions in the decomposition of both the hidden field $f$ and of the input field $g$. However in practice we may have a control surface that is local in the space $\mathcal{S}$, and hence would benefit from a specific, tailored decomposition. 
 \end{remark}
 
 \begin{remark}
@@ -211,7 +211,7 @@ As a notational convenience, we have used the same basis functions in the decomp
 
 \section{Parameter Estimation}
 
-In order to estiamte the shape of the spatial mixing kernels, we apply the EM algorithm, following the derivation given in \cite{GibsonNinness}. We first derive the E-step, giving an expression for the distribution of the field at each point in time. We then derive the M-step, giving an analytical maximum of the resulting function.
+In order to estimate the shape of the spatial mixing kernels, we apply the EM algorithm, following the derivation given in \cite{GibsonNinness}. We first derive the E-step, giving an expression for the distribution of the field at each point in time, given the data. We then derive the M-step, giving an analytical maximum of the lower bound on the likelihood.
 
 The key insights here are:
 \begin{itemize}
@@ -227,7 +227,7 @@ The EM algorithm in this context seeks to find the maximum likelihood parameter 
 \begin{equation}
 \thetaML=\arg\max_{\theta} \p (Y ; \theta)
 \end{equation}
-in the case where $\p(Y;\theta)$ is difficult to maximise directly due to a dependence on a hidden variable $X$. By exploiting a relationship between $\p(Y; \theta)$ and $\p(X,Y; \theta)$, it is possible to generate a sequence of parameter estimates that converges on the maximum likelihood parameter estimate.
+in the case where $\p(Y;\theta)$ is difficult to maximise directly due to a dependence on a hidden variable $X$. By exploiting the relationship between $\p(Y; \theta)$ and $\p(X,Y; \theta)$, it is possible to generate a sequence of parameter estimates that converges on the maximum likelihood parameter estimate.
 
 The EM algorithm achieves this by maximising a lower bound on the log likelihood
 \begin{equation}
@@ -237,7 +237,7 @@ where $\E_{\theta'}[\cdot]$ denotes expectation taken with respect to the distri
 
 \subsection{E-step}
 
-The E-step involves forming the expectation in $Q(\theta,\theta')$, which is equivalent to find the distribution over the field $f_t$ given all the data $Y$ and the current kernel estimates $\theta'$. We demonstrate that, using the field decompositions in Assumption \ref{ass:fielddecomp}, this distribution is provided by the RTS smoother. 
+The E-step involves forming the expectation in $Q(\theta,\theta')$, which itself involves finding the distribution over the field $f_t$ given all the data $Y$ and the current kernel estimates $\theta'$. We demonstrate that, using the field decompositions in Assumption \ref{ass:fielddecomp}, this distribution is provided by the RTS smoother. 
 
 Under the decomposition (\ref{eq:f decomp}) we can rewrite 
 \begin{equation}
@@ -247,8 +247,7 @@ where $\Xi = \int\int ds' ds ~ \phi(s')Q^{-1}(s',s)\phi(s)^\top$. Here the vecto
 \begin{equation}
 	\ell(\theta) =  \epsilon  - \frac{1}{2}\dist{\xvec_t - \hat{\xvec}_t}{\Xi} - \frac{1}{2}\dist{\yvec_t-\hat{\yvec_t}}{R^{-1}}
 \end{equation}
-\todo{Can I say that this is convex in $\hat{x}$ and $\hat{y}$?}
-Recall that
+In order to derive an expression for $\hat{x}_t$, recall that
 \begin{equation}
 	\hat{f}_t(s) = \sum_{i=1}^{p}( \F_i f_{t-i})(s) + \sum_{j=1}^{q}(\G_j g_{t-j})(s)
 \end{equation}
@@ -256,13 +255,15 @@ Using the decomposition of the fields $f_t(s)$ and $g_t(s)$ given in Assumption 
 \begin{equation}
 	\phi(s)^\top\hat{\xvec}_t = \sum_{i=1}^{p}(\F_i \phi^\top)(s)\xvec_{t-i} + \sum_{j=1}^{q}(\G_j\phi^\top)(s)\uvec_{t-j}
 \end{equation}
-\todo{We don't need to decompose the kernels here!!!! This really rocks: the E-step involves the decomposition of the field; the M-step involves the decomposition of the kernel. I don't know how this helps, apart from shortening the paper, but it's certainly beautiful!}
-
-To achieve an expression for $\hat{\xvec}_t$ we pre-multiply both sides by $\phi(s)$ and integrate over space, giving
+To isolate $\hat{\xvec}_t$ on the left hand side, we pre-multiply both sides by $\phi(s)$, integrate over space, and pre-multiply both sides by the resulting matrix, giving
 \begin{equation}
-	\hat{\xvec}_t = \Phi^{-1} \int_\mathcal{S}ds \phi(s)\left(\sum_{i=1}^{p}(\F_i \phi^\top)(s)\xvec_{t-i} + \sum_{j=1}^{q}(\G_j\phi^\top)(s)\uvec_{t-j}\right)
+	\begin{split}
+	\hat{\xvec}_t = 
+		\sum_{i=1}^{p} \Phi^{-1} \int_\mathcal{S}ds \phi(s)(\F_i \phi^\top)(s)\xvec_{t-i} + \\
+	\sum_{j=1}^{q} \Phi^{-1} \int_\mathcal{S}ds \phi(s)(\G_j\phi^\top)(s)\uvec_{t-j}
+	\end{split}
 \end{equation}
-where $\Phi = \int_\mathcal{S}ds\phi(s)\phi(s)^\top$.
+where $\Phi = \int_\mathcal{S}ds\phi(s)\phi^\top(s)$.
 
 \begin{remark}
 	By defining the following matrices
@@ -279,14 +280,16 @@ where $\Phi = \int_\mathcal{S}ds\phi(s)\phi(s)^\top$.
 	making clear the effect of the decomposition on the HIDEX model in Definition \ref{def:hidex}: we are representing an infinite dimensional spatiotemporal model using a finite (although probably high) dimensional vector autoregressive model with exogenous inputs, via a basis function decomposition of the field. The key to this approach is that, unlike standard vector autoregressive models, the number of field basis functions $n_x$, is independent to the complexity of $F_i$ or $G_j$. Therefore we can increase the spatial resolution, or spatial extent, of our model without generating more parameters to learn.
 \end{remark}
 
+\todo{show how this can be placed into the standard state-space formulation, and hence applicable for filtering using the RTS smoother}
+
 \subsection{M-step}
 
 We need to maximise the expected log-likelihood function
 \begin{equation}
 	\label{eqn:exploglik}
 	\begin{split}
-	\E[\ell(\theta)] = \epsilon - \frac{1}{2}\sum_t\E[\dist{f_t(s) - \hat{f}_t(s)}{Q^{-1}}]  \\
-	- \frac{1}{2}\sum_t\E[\dist{\yvec_t-\hat{\yvec}_t}{R^{-1}}]
+	Q(\theta,\theta')] = \epsilon - \frac{1}{2}\sum_t\E_{\theta'}[\dist{f_t(s) - \hat{f}_t(s)}{Q^{-1}}]  \\
+	- \frac{1}{2}\sum_t\E_{\theta'}[\dist{\yvec_t-\hat{\yvec}_t}{R^{-1}}]
 	\end{split}
 \end{equation}
 with respect to the unknown parameters $\theta$. Noting that 
@@ -299,10 +302,10 @@ due to the fact that the expectation of the mean field $\hat{f}$ is itself, we c
 \begin{equation}
 	\begin{split}
 	\label{eqn:exloglik}
-	\E[\ell(\theta)] = \epsilon
-	- \inner{\E[f_t(s)]}{\hat{f}_t(s)}{Q^{-1}}
+	Q(\theta,\theta')] = \epsilon
+	- \inner{\E_{\theta'}[f_t(s)]}{\hat{f}_t(s)}{Q^{-1}}
 	- \frac{1}{2}\sum_t \dist{\hat{f}_t(s)}{Q^{-1}} \\
-	- \inner{\E[\yvec_t]}{\hat{\yvec}_t}{R^{-1}}
+	- \inner{\E_{\theta'}[\yvec_t]}{\hat{\yvec}_t}{R^{-1}}
 	- \frac{1}{2}\sum_t \dist{\hat{\yvec}_t}{R^{-1}}
 	\end{split}
 \end{equation}
@@ -423,17 +426,17 @@ We can write the second term \ref{eqn:exploglik} as quadratic in the unknonwn pa
 	\label{eqn:norm_y_error}
 	\E[\dist{\yvec_t-\hat{\yvec}_t}{R^{-1}}] = c^\top \gamma^c + c^\top \Gamma^c c
 \end{equation}
-where
+where \todo{The following expressions for $y_t$ need checking!}
 \begin{equation}
 	\gamma_c = \inner
 	{\E[y_t]}
-	{(\mathbb{P} y_t)}
+	{(\mathbb{P} f_t)}
 	{R^{-1}}
 \end{equation}
 \begin{equation}
 	 \Gamma^c = \inner
-		{(\mathbb{P} y_t)}
-		{(\mathbb{P}^\top y_t^\top)}
+		{(\mathbb{P} f_t)}
+		{(\mathbb{P}^\top f_t)}
 		{R^{-1}}
 \end{equation}
 Together, \ref{eqn:norm_x_error} and \ref{eqn:norm_y_error} allow us to write the expected log likelihood in the quadratic form:
