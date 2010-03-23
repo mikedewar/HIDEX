@@ -1,5 +1,4 @@
 from HIDEX_elements import Field, Kernel, inner
-from inner import inner
 
 class HIDEX:
 	def __init__(self,F,G,H,f0,Q,R,psi,phi):	
@@ -14,13 +13,13 @@ class HIDEX:
 	def estimate_fields():
 		pass
 	
-	def estimate_kernels(f,u_seq,Y):
+	def estimate_kernels(f,g,Y):
 		"""
 		Parameters
 		==========
 		f : list
 			list of hidden fields
-		u_seq : list
+		g : list
 			list of input fields
 		Y : array
 			data
@@ -31,9 +30,9 @@ class HIDEX:
 		P_op = lambda f: inner(psi,f)
 		# TODO initialise gammas
 		for i in range(self.p):
-			gamma_a[i] = inner(f[t], P_op(f[t-i])), Qinv)
-		for j in range(self.q)
-			gamma_b[j] = inner(f[t], P_op(f[t-i])), Qinv)
+			gamma_a[i] = inner(f[t], P_op(f[t-i]), Qinv)
+		for j in range(self.q):
+			gamma_b[j] = inner(f[t], P_op(f[t-i]), Qinv)
 		gamma_c = inner(y[t], P_op(y[t]), Rinv)
 		for i in range(self.p):
 			for idash in range(self.p):
