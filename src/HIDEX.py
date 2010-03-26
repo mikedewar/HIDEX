@@ -1,7 +1,13 @@
-from HIDEX_elements import Field, Kernel, inner
+from HIDEX_elements import Field, Kernel, inner, CovarianceFunction
+from pyLDS import LDS
+
+# this class implements a HIDEX(p,q) spatiotemporal model. This represents
+# multiple order dynamics, input and observation processes. Note that pretty
+# much ALL of the computation is taken up by the "inner" methods of the basis
+# functions which are described in the HIDEX_elements.py file.
 
 class HIDEX:
-	def __init__(self,F,G,H,f0,Q,R,psi,phi):
+	def __init__(self,F,G,H,f0,Q,R):
 		"""
 		Parameters
 		==========
@@ -11,22 +17,19 @@ class HIDEX:
 			list of input kernels
 		H : Kernel object
 			observation kernel
-		phi : list
-			list of field basis functions
-		psi : list
-			list of kernel basis functions
+		f0 : Field object
+			initial field
+		Q : CovarianceFunction object
+			covariance of the field
+		R : matrix
+			covariance matrix of the observation noise
 		"""
-			
-		# TODO
-		# ====
-		# 1) There's probably not much need to include psi and phi here, when
-		# they're going to be in the kernels and fields anyway. Still, for now,
-		# it saves some time.
-
+		
+		# process and store arguments
 		self.p = len(F)
 		self.q = len(G)
-		self.psi = psi
-		self.phi = phi
+		self.psi = F[0].bases
+		self.phi = f0.bases
 		self.F = F
 		self.G = G
 		self.H = H
@@ -47,17 +50,41 @@ class HIDEX:
 		"""
 		pass
 	
-	def estimate_fields():
+	def estimate_fields(self,U,Y):
+		"""
+		Parameters
+		==========
+		U : list
+			list of input fields
+		Y : list
+			list of observation vectors
+		"""
 		# form the state space representation
-		A = hstack([self.Phi_inv * inner(phi,phi,F) for F in self.F])
-		B = hstack([self.Phi_inv * inner(phi,phi,G) for G in self.G])
-		C 
+		A = hstack([
+			self.Phi_inv * inner(self.phi, self.phi, F) for F in self.F
+		])
+		B = hstack([
+			self.Phi_inv * inner(self.phi, self.phi, G) for G in self.G
+		])
+		C = inner(self.H, self.phi)
 		# this is [A_1 A_2 .. A_p; I 0]
 		I = np.eye(len(self.phi)*(p-1))
-		O = np.zeros((len(self.phi)*(p-1),len(self.phi)))
-		A = vstack([A,hstack([I,O])])
-		
-		
+		O = np.zeros((len(self.phi)*(p-1), len(self.phi)))
+		A = vstack([A, hstack([I, O])])
+		# this is [B_1 B_2 .. B_q; I 0]
+		I = np.eye(len(self.phi)*(q-1))
+		O = np.zeros((len(self.phi)*(q-1), len(self.phi)))
+		B = vstack([B,hstack([I, O])])
+		# make the covariance matrices
+		Sw = inner(self.phi, self.phi, self.Q)
+		# make a state space model
+		ssmodel = LDS.LDS(A, B, C, Sw, self.R, x0)
+		# use the smoother to extract the estimated field weights
+		X,P,K,M = ssmodel.smoother(Y,[u.weights for u in U])
+		# form the list of fields
+		f = [Field(bases=self.phi,weights=x) for x in X]	
+		# return the fields, the covariances and the cross covariances
+		return f, P, M
 	
 	def estimate_kernels(f,g,Y):
 		"""
