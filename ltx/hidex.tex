@@ -164,12 +164,12 @@ where $\epsilon$ collects together all the terms that do not depend on (any elem
 	We assume the following decompositions of the hidden and input fields can be made exactly:
 \begin{equation}
 	\label{eq:f decomp}
-	f_t(s) = \xvec_t^\top\phi(s)
+	f_t(s) = x_t^\top\phi(s)
 \end{equation}
 \begin{equation}
-	g_t(s) = \phi(s)^\top\uvec_t
+	g_t(s) = \phi(s)^\top u_t
 \end{equation}	 
-where $\xvec_t \in \R^{n_x}$ is a vector of unknown weights, referred to as the state of the hidden field at time $t$, and $\uvec_t \in \R^{n_x}$ is a vector of known weights, referred to as the input at time $t$. Here, $\phi(s) : \mathbb{R}^{n_\mathcal{S}} \onto \mathbb{R}$ is a vector of basis functions drawn from the spanning set thingy.
+where $x_t \in \R^{n_x}$ is a vector of unknown weights, referred to as the state of the hidden field at time $t$, and $u_t \in \R^{n_x}$ is a vector of known weights, referred to as the input at time $t$. Here, $\phi(s) : \mathbb{R}^{n_\mathcal{S}} \onto \mathbb{R}$ is a vector of basis functions drawn from the spanning set thingy.
 \end{assumption}
 
 \begin{assumption}[Kernel Decompositions]
@@ -240,15 +240,17 @@ where $\E_{\theta'}[\cdot]$ denotes expectation taken with respect to the distri
 
 \subsection{E-step}
 
-The E-step involves forming the expectation in $Q(\theta,\theta')$, which itself involves finding the distribution over the field $f_t$ given all the data $Y$ and the current kernel estimates $\theta'$. We demonstrate that, using the field decompositions in Assumption \ref{ass:fielddecomp}, this distribution is provided by the RTS smoother. 
+The E-step involves forming the expectation in $Q(\theta,\theta')$, which itself involves finding the distribution over the field $f_t$ given all the data $Y$ and the current kernel estimates $\theta'$. We demonstrate that, using the field decompositions in Assumption \ref{ass:fielddecomp}, this distribution is provided by the RTS smoother. We first derive a recursive relationship between the decomposed field's weights, and then show that, using this relationship, we can write the HIDEX$(p,q)$ model as a $pn_x$-order state space model.
+
+\subsubsection{Field Weight Dynamics}
 
 Under the decomposition (\ref{eq:f decomp}) we can rewrite 
 \begin{equation}
-	\dist{f_t(s) - \hat{f}_t(s)}{Q^{-1}} = \dist{\xvec_t - \hat{\xvec}_t}{\Xi}
+	\dist{f_t(s) - \hat{f}_t(s)}{Q^{-1}} = \dist{x_t - \hat{x}_t}{\Xi}
 \end{equation}
-where $\Xi = \int\int ds' ds ~ \phi(s')Q^{-1}(s',s)\phi(s)^\top$. Here the vector $\xvec_t \in \R^{n_x}$ weights a vector of basis functions $\phi(s)$ that together decompose the current field $f_t(s)$, and similarly $\hat{\xvec}_t \in \R^{n_x}$ weights the decomposition of $\hat{f}(s)$. This allows us to replace the infinite dimensional term in the likelihood with a finite dimensional term via the decomposition, giving
+where $\Xi = \int\int ds' ds ~ \phi(s')Q^{-1}(s',s)\phi(s)^\top$. Here the vector $x_t \in \R^{n_x}$ weights a vector of basis functions $\phi(s)$ that together decompose the current field $f_t(s)$, and similarly $\hat{x}_t \in \R^{n_x}$ weights the decomposition of $\hat{f}(s)$. This allows us to replace the infinite dimensional term in the likelihood with a finite dimensional term via the decomposition, giving
 \begin{equation}
-	\ell(\theta) =  \epsilon  - \frac{1}{2}\dist{\xvec_t - \hat{\xvec}_t}{\Xi} - \frac{1}{2}\dist{\yvec_t-\hat{\yvec_t}}{R^{-1}}
+	\ell(\theta) =  \epsilon  - \frac{1}{2}\dist{x_t - \hat{x}_t}{\Xi} - \frac{1}{2}\dist{\yvec_t-\hat{\yvec_t}}{R^{-1}}
 \end{equation}
 In order to derive an expression for $\hat{x}_t$, recall that
 \begin{equation}
@@ -256,14 +258,14 @@ In order to derive an expression for $\hat{x}_t$, recall that
 \end{equation}
 Using the decomposition of the fields $f_t(s)$ and $g_t(s)$ given in Assumption \ref{ass:fielddecomp} this can be re-written
 \begin{equation}
-	\phi(s)^\top\hat{\xvec}_t = \sum_{i=1}^{p}(\F_i \phi^\top)(s)\xvec_{t-i} + \sum_{j=1}^{q}(\G_j\phi^\top)(s)\uvec_{t-j}
+	\phi(s)^\top\hat{x}_t = \sum_{i=1}^{p}(\F_i \phi^\top)(s)x_{t-i} + \sum_{j=1}^{q}(\G_j\phi^\top)(s)u_{t-j}
 \end{equation}
-To isolate $\hat{\xvec}_t$ on the left hand side, we pre-multiply both sides by $\phi(s)$, integrate over space, and pre-multiply both sides by the resulting matrix, giving
+To isolate $\hat{x}_t$ on the left hand side, we pre-multiply both sides by $\phi(s)$, integrate over space, and pre-multiply both sides by the resulting matrix, giving
 \begin{equation}
 	\begin{split}
-	\hat{\xvec}_t = 
-		\sum_{i=1}^{p} \Phi^{-1} \int_\mathcal{S}ds \phi(s)(\F_i \phi^\top)(s)\xvec_{t-i} + \\
-	\sum_{j=1}^{q} \Phi^{-1} \int_\mathcal{S}ds \phi(s)(\G_j\phi^\top)(s)\uvec_{t-j}
+	\hat{x}_t = 
+		\sum_{i=1}^{p} \Phi^{-1} \int_\mathcal{S}ds \phi(s)(\F_i \phi^\top)(s)x_{t-i} + \\
+	\sum_{j=1}^{q} \Phi^{-1} \int_\mathcal{S}ds \phi(s)(\G_j\phi^\top)(s)u_{t-j}
 	\end{split}
 \end{equation}
 where $\Phi = \int_\mathcal{S}ds\phi(s)\phi^\top(s)$.
@@ -271,22 +273,66 @@ where $\Phi = \int_\mathcal{S}ds\phi(s)\phi^\top(s)$.
 \begin{remark}
 	By defining the following matrices
 	\begin{equation}
+		\label{eqn:arxA}
 		A_i = \Phi^{-1} \inner{\phi(s)}{\phi^\top(s)}{F_i}
 	\end{equation}
 	\begin{equation}
+		\label{eqn:arxB}
 		B_j = \Phi^{-1} \inner{\phi(s)}{\phi^\top(s)}{G_j}
 	\end{equation}
 	we can write an expression for $\hat{x}$ in multivariate ARX($p,q$) \cite{Ljung} form:
 	\begin{equation}
 		\label{eqn:arx}
-		\hat{\xvec}_t = \sum_{i=1}^{p} A_i^\top \xvec_{t-i} +  \sum_{j=1}^{q} B_j^\top \uvec_{t-j}
+		\hat{x}_t = \sum_{i=1}^{p} A_i^\top x_{t-i} +  \sum_{j=1}^{q} B_j^\top u_{t-j}
 	\end{equation}
 	making clear the effect of the decomposition on the HIDEX model in Definition \ref{def:hidex}: we are representing an infinite dimensional spatiotemporal model using a finite (although probably high) dimensional vector autoregressive model with exogenous inputs, via a basis function decomposition of the field. The key to this approach is that, unlike standard vector autoregressive models, the number of field basis functions $n_x$, is independent to the complexity of $F_i$ or $G_j$. Therefore we can increase the spatial resolution, or spatial extent, of our model without generating more parameters to learn.
 \end{remark}
 
 \todo{show how this can be placed into the standard state-space formulation, and hence applicable for filtering using the RTS smoother}
 
+\subsubsection{State Space Model Form}
+
 This recursive relationship between the field weights over time, and between the field weights and the observations, defines a linear, Gaussian state space model. Hence the posterior distribution of the states $x_t$ given a parameter set $\theta'$, and therefore the posterior distribution of the set of fields $\mathcal{F}$, is given by the very well-known Rauch-Tung-Streibel smoother (sometimes called the Kalman Smoother).
+
+The basic state-space form required for the RTS smoother is given as
+\begin{equation}
+	\label{eqn:ssmodel_hidden}
+	\xvec_{t+1} = A\xvec_t + B\uvec_t + w
+\end{equation}
+\begin{equation}
+	\label{eqn:ssmodel_observations}
+	y_t = C\xvec_t + v
+\end{equation}
+Here $A \in \R^{pn_{x} \times pn_x}$ is known as the state transition matrix, $B \in \R^{pn_x \times qn_x}$ is the input matrix and $C \in \R^{n_y \times pn_x}$ is the observation matrix. The disturbance $w$ and observation noise $v$ are both i.i.d. and normally distributed. 
+
+If we define the state $\xvec_t \in \R^{pn_x}$ and the input $\uvec_t \in \R^{qn_x}$ as 
+\begin{equation}
+	\xvec_t = [x_t^\top ~ x_{t-1}^\top ~ \ldots ~ x_{t-p+1}^\top]^\top
+\end{equation}
+\begin{equation}
+	\uvec_t = [u_t^\top ~ u_{t-1}^\top ~ \ldots ~ u_{t-q+1}^\top]^\top
+\end{equation}
+then the `state' of the decomposed system can be thought of as the information required to predict the next field. With these definitions, and the recursive relationship on $\hat{x}$ defined above, the formation of $A$, $B$ and $C$ are trivial. The state transition matrix is defined by concatenating the $A_i$s defined in \ref{eqn:arxA}:
+\begin{equation}
+	A = \begin{bmatrix}
+	A_1 & A_2 & \ldots & A_p \\
+	\multicolumn{3}{c}{I_{(p-1)n_x}} & 0_{(p-1)n_x \times n_x}
+	\end{bmatrix}
+\end{equation}
+where $I_n$ denotes the $n\times n$ identity matrix and $0_{m\times n}$ denotes a $m\times n$ matrix of zeroes. Similarly for the input matrix:
+\begin{equation}
+	B = \begin{bmatrix}
+	B_1 & B_2 & \ldots & B_q \\
+	\multicolumn{4}{c}{0_{(p-1)n_x\times qn_x}}
+	\end{bmatrix}
+\end{equation}
+The observation matrix is formed by substituting the field decomposition into \ref{eqn:hidex-obs}, to give
+\begin{equation}
+	C = [(\mathbb{H}\phi^\top)([s_1 ~ \ldots ~ s_{n_y}]^\top) ~ 0_{n_y \times (p-1)n_x}]
+\end{equation}
+where we use the notation $(\mathbb{H}\phi^\top)([s_1 ~  \ldots ~ s_{n_y}]^\top)$ to represent the row vector $(\mathbb{H}\phi^\top)(s)$ evaluated at multiple locations $s_1 \ldots s_{n_y}$ to give a matrix $(\mathbb{H}\phi^\top)([s_1 ~  \ldots ~ s_{n_y}]^\top) \in \R^{n_y \times n_x}$.
+
+The equations 
 
 \subsection{M-step}
 
