@@ -1,5 +1,10 @@
-from HIDEX_elements import Field, Kernel, inner, CovarianceFunction
+from HIDEX_elements import Field, Kernel, inner, outer, CovarianceFunction
 from pyLDS import LDS
+import numpy as np
+
+import sys, logging
+logging.basicConfig(stream=sys.stdout,level=logging.DEBUG)
+
 
 # this class implements a HIDEX(p,q) spatiotemporal model. This represents
 # multiple order dynamics, input and observation processes. Note that pretty
@@ -24,22 +29,21 @@ class HIDEX:
 		R : matrix
 			covariance matrix of the observation noise
 		"""
-		
 		# process and store arguments
 		self.p = len(F)
 		self.q = len(G)
-		self.psi = F[0].bases
-		self.phi = f0.bases
+		self.psi = Field(F[0].bases)
+		self.phi = Field(f0.bases)
 		self.F = F
 		self.G = G
 		self.H = H
 		# form Phi = \int phi(s) phi^T(s) ds
-		self.Phi = empty((len(self.phi),len(self.phi)))
-		for i,phi_i in enumerate(self.phi):
-			for phi_j in enumerate(self.phi):
-				self.Phi[i,j] = inner(phi_i,phi_j)
+		self.Phi = outer(self.phi,self.phi)
 		# store the inversion
-		self.Phi_inv = np.inv(Phi)
+		self.Phi_inv = np.linalg.inv(self.Phi)
+		# logging
+		self.log = logging.getLogger('Field')
+		self.log.info('Initialised new HIDEX model')
 	
 	def simulate(self,U):
 		"""
@@ -48,7 +52,35 @@ class HIDEX:
 		U : list
 			list of input fields
 		"""
-		pass
+		self.log.info('simulating HIDEX model')
+		raise NotImplementedError
+	
+	def gen_LDS(self):
+		self.log.info('forming LDS model')
+		# form the state space representation
+		A = np.hstack([
+			self.Phi_inv * outer(self.phi, self.phi, F) for F in self.F
+		])
+		# this is [A_1 A_2 .. A_p; I 0]
+		I = np.eye(len(self.phi)*(self.p-1))
+		O = np.zeros((len(self.phi)*(self.p-1), len(self.phi)))
+		A = np.vstack([A, np.hstack([I, O])])
+		if self.G:
+			B = np.hstack([
+				self.Phi_inv * outer(self.phi, self.phi, G) for G in self.G
+			])
+			# this is [B_1 B_2 .. B_q; I 0]
+			I = np.eye(len(self.phi)*(self.q-1))
+			O = np.zeros((len(self.phi)*(self.q-1), len(self.phi)))
+			B = np.vstack([B,np.hstack([I, O])])
+		else: 
+			B = None
+		C = inner(self.H, self.phi)
+		# make the covariance matrices
+		Sw = inner(self.phi, self.phi, self.Q)
+		# make a state space model
+		ssmodel = LDS.LDS(A, B, C, Sw, self.R, x0)
+		
 	
 	def estimate_fields(self,U,Y):
 		"""
@@ -59,26 +91,9 @@ class HIDEX:
 		Y : list
 			list of observation vectors
 		"""
-		# form the state space representation
-		A = hstack([
-			self.Phi_inv * inner(self.phi, self.phi, F) for F in self.F
-		])
-		B = hstack([
-			self.Phi_inv * inner(self.phi, self.phi, G) for G in self.G
-		])
-		C = inner(self.H, self.phi)
-		# this is [A_1 A_2 .. A_p; I 0]
-		I = np.eye(len(self.phi)*(p-1))
-		O = np.zeros((len(self.phi)*(p-1), len(self.phi)))
-		A = vstack([A, hstack([I, O])])
-		# this is [B_1 B_2 .. B_q; I 0]
-		I = np.eye(len(self.phi)*(q-1))
-		O = np.zeros((len(self.phi)*(q-1), len(self.phi)))
-		B = vstack([B,hstack([I, O])])
-		# make the covariance matrices
-		Sw = inner(self.phi, self.phi, self.Q)
-		# make a state space model
-		ssmodel = LDS.LDS(A, B, C, Sw, self.R, x0)
+		self.log.info('estimating fields')
+		# form state space model
+		ssmodel = self.gen_LDS()
 		# use the smoother to extract the estimated field weights
 		X,P,K,M = ssmodel.smoother(Y,[u.weights for u in U])
 		# form the list of fields
@@ -97,6 +112,7 @@ class HIDEX:
 		Y : array
 			data
 		"""
+		self.log.info('estimating kernels')
 		# treat psi as a kernel with unit weights
 		psi = Kernel(bases=self.psi,weights=ones(length(self.psi)))
 		# then define an operator P_op based on that kernel
@@ -143,7 +159,13 @@ class HIDEX:
 			[Gab.T, Gb, O(nb,nc)],
 			[O(nc,na), O(nc,nb), Gamma_c]
 		])	
-
 	
 	def estimate(Y):
 		pass
+	
+
+if __name__ == "__main__":
+	import os
+	os.system("python paper_examples.py")
+
+

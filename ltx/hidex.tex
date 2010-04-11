@@ -60,10 +60,12 @@
 \section{The HIDEX($p,q$) Model}
 \label{sec:model}
 
+We first introduce the HIDEX($p,q$) model. We then derive the log-likelihood function and introduce a set of decompositions which will be used in Section \ref{sec:estimation} to make the system identification problem tractable. 
+
 The model is defined across spatial locations $s \in \mathcal{S} = \mathbb{R}^{n_\mathcal{S}}$ and at times $t \in \mathbb{Z}_+$. Here $n_\mathcal{S} \in \{1,2,3\}$ is the spatial dimension of the system under study, and, as time is always one dimensional, it is $n_\mathcal{S}$ that we use to describe the dimension of the model. 
 
 \begin{definition}[Spatial Mixing Kernel]
-	Let $\mathcal{S}$ denote an $n_\mathcal{S}$-dimensional physical space and $f_t(s): \mathbb{R}^{n_\mathcal{S}} \onto \mathbb{R}$ denote the spatial field across space $s \in \mathcal{S}$ at time $t \in \mathbb{Z}_+$. The kernel $k(s,r): \mathbb{R}^{n_\mathcal{S}} \times \mathbb{R}^{n_\mathcal{S}} \onto \mathbb{R}$ of the integral operator
+	Let $\mathcal{S}$ denote an $n_\mathcal{S}$-dimensional physical space and $f_t(s): \mathbb{R}^{n_\mathcal{S}} \onto \mathbb{R}$ denote the spatial field across space $s \in \mathcal{S}$ at time $t \in \mathbb{Z}_+$. Then the kernel $k(s,r): \mathbb{R}^{n_\mathcal{S}} \times \mathbb{R}^{n_\mathcal{S}} \onto \mathbb{R}$ of the integral operator
 	\begin{equation}
 		(\mathbb{K}f_t)(s) = \int k(s,r) f_{t-1}(r) dr
 	\end{equation}
@@ -90,7 +92,7 @@ The model is defined across spatial locations $s \in \mathcal{S} = \mathbb{R}^{n
 	\begin{itemize}
 		\item The disturbance $e(s) \sim \mathrm{GP}(0,Q(s,s'))$ is assumed i.i.d, drawn from a Gaussian Process with zero mean and covariance function $Q(s,s')$.
 		\item The observation noise $\epsilon \sim N(0,\sigma)$ is assumed i.i.d, drawn from a univariate normal distribution with zero mean and variance $\sigma$.
-		\item The initial field $f_0(s) \sim \mathrm{GP}(0,Q(s,s'))$ is drawn from a Gaussian Process with zero mean and covariance function $Q(s,s')$.
+		\item The initial field $f_0(s) \sim \mathrm{GP}(0,Q(s,s'))$ is drawn from the same distribution as $e(s)$.
 	\end{itemize}
 \end{assumption}
 
@@ -108,22 +110,22 @@ The following assumptions are made on the input and output of the system under s
 Let the unknown parameter set be defined as $\theta = \{F_1, F_2, \ldots F_p, G_1,G_2,\ldots G_q, H\}$ - the set of all the spatial mixing kernels that together define the HIDEX model. Let $\mathcal{F} = \{f_t(s) : t = 1 \ldots T\}$ denote the set of fields associated with each time point of the collected observations and similarly $\mathcal{G} = \{g_t(s) : t = 1 \ldots T\}$ denotes all the inputs. The likelihood factorises along the independence structures defined by the model formulation:
 \begin{equation}
 	\begin{split}
-	p(\mathcal{F}, Y;\theta) =  p(f_0(s)) \prod_{t=1}^T p(\yvec_t|f_t(s))
-	\prod_{t=1}^T  p(f_t(s)|\mathcal{F}_{t-1}^{t-p}, \mathcal{G}_{t-1}^{t-q}) 
+	p(\mathcal{F}, Y;\theta) =  p(f_0) \prod_{t=1}^T p(\yvec_t|f_t)
+	\prod_{t=1}^T  p(f_t|\mathcal{F}_{t-1}^{t-p}, \mathcal{G}_{t-1}^{t-q}) 
 	\end{split}
 \end{equation}
-where $\yvec_t = [y_t(s_1) ~ y_t(s_2) ~ \ldots ~ y_t(s_m)]^\top$, the vector formed by evaluating $y_t(s)$ of Equation \ref{eqn:hidex-obs} at each of the $m$ observation locations. Here $\mathcal{F}_{t-1}^{t-p} = \{f_{t-1} \ldots f_{t-p}\}$ and similarly for $\mathcal{G}_{t-1}^{t-q}$. Note that we have dropped the dependence on $\theta$ for notational convenience for the moment. Using the assumptions related to the observation noise, disturbance and initial condition in Assumption \ref{ass:noise}, these distributions are
+where $\yvec_t = [y_t(s_1) ~ y_t(s_2) ~ \ldots ~ y_t(s_m)]^\top$, the vector formed by evaluating $y_t(s)$ of Equation \ref{eqn:hidex-obs} at each of the $m$ observation locations. Here $\mathcal{F}_{t-1}^{t-p} = \{f_{t-1} \ldots f_{t-p}\}$ and similarly $\mathcal{G}_{t-1}^{t-q}= \{g_{t-1} \ldots g_{t-q}\}$. Note that we have dropped the dependence of the distributions on $\theta$, and the spatial argument of the fields $f_t$ and $g_t$ for notational convenience. Using Assumption \ref{ass:noise}, these distributions are
 \begin{equation}
 	\label{eqn:ydist}
-	p(\yvec_t|f_t(s)) = \N{\hat{\yvec}_t}{R}
+	p(\yvec_t|f_t) = \N{\hat{\yvec}_t}{R}
 \end{equation}
 \begin{equation}
 	\label{eqn:fdist}
-	p(f_t(s)|\mathcal{F}_{t-1}^{t-p}, \mathcal{G}_{t-1}^{t-q}) = \GP{ \hat{f}_t}{Q(s,s')}
+	p(f_t|\mathcal{F}_{t-1}^{t-p}, \mathcal{G}_{t-1}^{t-q}) = \GP{ \hat{f}_t}{Q(s,s')}
 \end{equation}
 where $R = \sigma I_m$,
 \begin{equation}
-	\hat{f}_t(s) =\sum_{i=1}^{p}( \F_i f_{t-i})(s) + \sum_{j=1}^{q}(\G_j g_{t-j})(s)
+	\hat{f}_t =\sum_{i=1}^{p}( \F_i f_{t-i}) + \sum_{j=1}^{q}(\G_j g_{t-j})
 \end{equation}
 and 
 \begin{equation}
@@ -138,10 +140,10 @@ If we define the log likelihood as
 \end{equation}
 then, using the notation
 \begin{equation}
-	\inner{f(s)}{g(s)}{Q} = \int_\mathcal{S} \int_\mathcal{S} ds~ds' f(s') Q(s',s) g(s)
+	\inner{f}{g}{Q} = \int_\mathcal{S} \int_\mathcal{S} ds~ds' f(s') Q(s',s) g(s)
 \end{equation}
 \begin{equation}
-	\dist{f(s)}{Q} = \inner{f(s)}{f(s)}{Q}
+	\dist{f}{Q} = \inner{f}{f}{Q}
 \end{equation}
 for functions and similarly
 \begin{equation}
@@ -149,7 +151,7 @@ for functions and similarly
 \end{equation}
 for vectors, we can substitute Equations \ref{eqn:ydist} and \ref{eqn:fdist} into the log likelihood \ref{eqn:loglik} to get:
 \begin{equation}
-	\ell(\theta) =  \epsilon  - \frac{1}{2}\sum_t\dist{f_t(s) - \hat{f}_t(s)}{Q^{-1}} - \frac{1}{2}\sum_t\dist{\yvec_t-\hat{\yvec_t}}{R^{-1}}
+	\ell(\theta) =  \epsilon  - \frac{1}{2}\sum_t\dist{f_t - \hat{f}_t}{Q^{-1}} - \frac{1}{2}\sum_t\dist{\yvec_t-\hat{\yvec_t}}{R^{-1}}
 \end{equation}
 where $\epsilon$ collects together all the terms that do not depend on (any element of) $\theta$.
 
@@ -186,15 +188,15 @@ where $a_i, b_j, c \in \R^{n_y}$ are the parameters of the kernels $F_i, G_j$ an
 \end{assumption}
 
 \begin{remark}
-	The above assumptions may break down if $\mathcal{S}$ is defined as a subset of $\mathbb{R}^{n_\mathcal{S}}$ as the fields would then no longer be band limited due to the discontinuity at the edges of $\mathcal{S}$. It is worth noting that while we represent the field over an infinite space, the representation will be largely uninformative outside the observed region of interest. If we use local basis functions, such as squared exponential bases, then the representation of the field away from the centres of the bases will be described almost completely by the properties of the disturbance process.
+	The above assumptions will not hold if $\mathcal{S}$ is defined as a subset of $\mathbb{R}^{n_\mathcal{S}}$. This is due to the fact that here the field $f$ would no longer be band limited due to the discontinuity at the edges of $\mathcal{S}$. It is worth noting that while we represent the field over an infinite space, the representation will be largely uninformative outside the observed region of interest. If we use local basis functions, such as squared exponential bases, then the representation of the field away from the centres of the bases will be described almost completely by the properties of the disturbance process.
 \end{remark}
 
 \begin{remark}
-As a notational convenience, we have used the same basis functions in the decomposition of both the hidden field $f$ and of the input field $g$. However in practice we may have a control surface that is local in the space $\mathcal{S}$, and hence would benefit from a specific, tailored decomposition. 
+As a notational convenience, we have used the same basis functions in the decomposition of both the hidden field $f$ and the input field $g$. However, in practice, we may have a control surface that is local in the space $\mathcal{S}$, and hence would benefit from a specific, tailored decomposition. 
 \end{remark}
 
 \begin{remark}
-	It is useful for what follows to note the effect that decomposing the field has on its distribution. By substituting \ref{eq:f decomp} into \ref{eqn:fdist}, we get
+	It is useful for what follows to derive the distribution of the system states from the distribution of the field. By substituting the decomposition \ref{eq:f decomp} into the field distribution \ref{eqn:fdist}, we get
 	\begin{equation}
 		p(x_t\phi(s)) = \mathrm{GP}(\hat{x}^\top\phi(s),Q(s,s))
 	\end{equation}
@@ -210,6 +212,7 @@ As a notational convenience, we have used the same basis functions in the decomp
 \end{remark}
 
 \section{Parameter Estimation}
+\label{sec:estimation}
 
 In order to estimate the shape of the spatial mixing kernels, we apply the EM algorithm, following the derivation given in \cite{GibsonNinness}. We first derive the E-step, giving an expression for the distribution of the field at each point in time, given the data. We then derive the M-step, giving an analytical maximum of the lower bound on the likelihood.
 
@@ -275,12 +278,15 @@ where $\Phi = \int_\mathcal{S}ds\phi(s)\phi^\top(s)$.
 	\end{equation}
 	we can write an expression for $\hat{x}$ in multivariate ARX($p,q$) \cite{Ljung} form:
 	\begin{equation}
+		\label{eqn:arx}
 		\hat{\xvec}_t = \sum_{i=1}^{p} A_i^\top \xvec_{t-i} +  \sum_{j=1}^{q} B_j^\top \uvec_{t-j}
 	\end{equation}
 	making clear the effect of the decomposition on the HIDEX model in Definition \ref{def:hidex}: we are representing an infinite dimensional spatiotemporal model using a finite (although probably high) dimensional vector autoregressive model with exogenous inputs, via a basis function decomposition of the field. The key to this approach is that, unlike standard vector autoregressive models, the number of field basis functions $n_x$, is independent to the complexity of $F_i$ or $G_j$. Therefore we can increase the spatial resolution, or spatial extent, of our model without generating more parameters to learn.
 \end{remark}
 
 \todo{show how this can be placed into the standard state-space formulation, and hence applicable for filtering using the RTS smoother}
+
+This recursive relationship between the field weights over time, and between the field weights and the observations, defines a linear, Gaussian state space model. Hence the posterior distribution of the states $x_t$ given a parameter set $\theta'$, and therefore the posterior distribution of the set of fields $\mathcal{F}$, is given by the very well-known Rauch-Tung-Streibel smoother (sometimes called the Kalman Smoother).
 
 \subsection{M-step}
 
