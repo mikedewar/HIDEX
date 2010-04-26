@@ -79,7 +79,7 @@ class HIDEX:
 		# make the covariance matrices
 		Sw = inner(self.phi, self.phi, self.Q)
 		# make a state space model
-		ssmodel = LDS.LDS(A, B, C, Sw, self.R, x0)
+		return LDS.LDS(A, B, C, Sw, self.R, x0)
 		
 	
 	def estimate_fields(self,U,Y):
@@ -158,10 +158,50 @@ class HIDEX:
 			[Ga, Gab, O(na,nc)],
 			[Gab.T, Gb, O(nb,nc)],
 			[O(nc,na), O(nc,nb), Gamma_c]
-		])	
+		])
+		# perform the maximisation
+		theta = 0.5 * Gamma.I * gamma
+		# unpick the parameters
+		theta_l = array(theta).flatten().tolist()
+		nx = len(self.psi)
+		# watch carefully!
+		# a is composed of the first p*nx elements of the list theta_l
+		# so we pop theses from the list. Then reshape them into an array
+		# where each column of this array corresponds to a_i
+		a = pb.array([theta_l.pop(0) for i in range(self.p*nx)]).reshape(nx,self.p)
+		# similarly, b is composed of the first q*nx of the now shortened list!
+		# so we just do the same thing, pop the first q*nx elements and reshape
+		b = pb.array([theta_l.pop(0) for i in range(self.q*nx)]).reshape(nx,self.q)
+		# finally, c is all that's left. So just make it into an array!
+		c = pb.array(theta_l)
+		# form the new kernels. We need to transpose a and b because they're 
+		# stored columnwise, i.e. a_i = a[:,i] and the "for" works row-wise
+		for Fi,ai in zip(self.F,a.T)
+			Fi.bases = ai
+		for Gi,bi in zip(self.G,b.T)
+			Gi.bases = bi
+		self.H.bases = c
 	
-	def estimate(Y):
-		pass
+	def estimate(Y,max_its=10,threshold = 0.001):
+		not_converged = 1
+		not_reached_max_its = 1
+		i = 0
+		# init
+		f,P,M = self.estimate_fields(U,Y)
+		while not_converged or not_reached_max_its:
+			# M step
+			self.estimate_kernels(f,g,Y,P,M)
+			# E step
+			f,P,M = self.estimate_fields(U,Y)
+			# check for convergence
+			i+=1
+			if i == max_its:
+				not_reached_max_its = 0
+			if self.change_in_likelihood(Y) < threshold:
+				not_converged = 0		
+	
+	def change_in_likelihood(self,Y):
+		raise NotImplementedError
 	
 
 if __name__ == "__main__":
