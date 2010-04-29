@@ -208,13 +208,26 @@ As a notational convenience, we have used the same basis functions in the decomp
 	\begin{equation}
 		\Sigma_w = \Phi^{-1}\dist{\phi}{Q} \Phi^{-1}
 	\end{equation}
-	which follows directly by substituting $f_t(s) = x_t^\top\phi(s)$ into the definition of the covariance function $Q(s,s')$ \cite{Scerri09}.
+	where
+	\begin{equation}
+	\Phi = \int_\mathcal{S}ds\phi(s)\phi^\top(s)
+	\end{equation}
+	This follows directly by substituting $f_t(s) = x_t^\top\phi(s)$ into the definition of the covariance function $Q(s,s')$ \cite{Scerri09}.
 \end{remark}
+
+Finally, using the field decomposition (\ref{eq:f decomp}) we can rewrite 
+\begin{equation}
+	\dist{f_t(s) - \hat{f}_t(s)}{Q^{-1}} = \dist{x_t - \hat{x}_t}{\Xi}
+\end{equation}
+where $\Xi = \int\int ds' ds ~ \phi(s')Q^{-1}(s',s)\phi(s)^\top$ allowing us to replace the infinite dimensional term in the likelihood with a finite dimensional term via the decomposition, giving
+\begin{equation}
+	\ell(\theta) =  \epsilon  - \frac{1}{2}\dist{x_t - \hat{x}_t}{\Xi} - \frac{1}{2}\dist{\yvec_t-\hat{\yvec_t}}{R^{-1}}
+\end{equation}
 
 \section{Parameter Estimation}
 \label{sec:estimation}
 
-In order to estimate the shape of the spatial mixing kernels, we apply the EM algorithm, following the derivation given in \cite{GibsonNinness}. We first derive the E-step, giving an expression for the distribution of the field at each point in time, given the data. We then derive the M-step, giving an analytical maximum of the lower bound on the likelihood.
+In order to estimate the shape of the spatial mixing kernels, we apply the EM algorithm, following the derivation given in \cite{GibsonNinness}. We first derive the E-step, giving an expression for the distribution of the field at each point in time, given the data. We then derive the M-step, finding an analytical maximum of a tight lower bound on the likelihood function.
 
 The key insights here are:
 \begin{itemize}
@@ -224,19 +237,19 @@ The key insights here are:
 
 \subsection{EM Algorithm}
 
-The EM algorithm is a well known method for jointly estimating the state sequence and parameters of state space models. It is by no means the only method: subspace \ref{subspace review}, variational-Bayes \ref{Hinton} and sampling \ref{Doucet} approaches are also popular in this context. Our aim here is to demonstrate that the model presented above can be estimated using \emph{standard} system identification techniques. It should be noted, however, that the EM algorithm lends itself naturally to the case where the system matrices are parameterised, and hence presents a good starting point for the identification of the HIDEX($p,q$) model.
+The EM algorithm is a well known method for jointly estimating the state sequence and parameters of state space models. It is by no means the only method: subspace \ref{subspace review}, variational-Bayes \ref{Hinton} and sampling \ref{Doucet} approaches are also popular in this context. Our aim here is to demonstrate that the model presented above can be estimated using \emph{standard} system identification techniques. It should be noted, however, that the EM algorithm lends itself naturally to the case of parameter estimation in linear dynamic systems where the system matrices are parameterised, and hence presents a good starting point for the identification of the HIDEX($p,q$) model.
 
 The EM algorithm in this context seeks to find the maximum likelihood parameter estimates 
 \begin{equation}
 \thetaML=\arg\max_{\theta} \p (Y ; \theta)
 \end{equation}
-in the case where $\p(Y;\theta)$ is difficult to maximise directly due to a dependence on a hidden variable $X$. By exploiting the relationship between $\p(Y; \theta)$ and $\p(X,Y; \theta)$, it is possible to generate a sequence of parameter estimates that converges on the maximum likelihood parameter estimate.
+in the case where $\p(Y;\theta)$ is difficult to maximise directly due to a dependence on a hidden variable $X$, in this case the state of the hidden field. By exploiting the relationship between $\p(Y; \theta)$ and $\p(X,Y; \theta)$, it is possible to generate a sequence of parameter estimates that converges on the maximum likelihood parameter estimate.
 
 The EM algorithm achieves this by maximising a lower bound on the log likelihood
 \begin{equation}
 	\mathcal{Q}(\theta,\theta')=\E_{\theta'}\left[\ln p(X,Y;\theta)\right]
 \end{equation}
-where $\E_{\theta'}[\cdot]$ denotes expectation taken with respect to the distribution $\p(X|Y ; \theta')$ where $\theta'$ is the current parameter estimate. In this context \cite{Gibson05}, the algorithm consists of two steps: the E-step performs the expectation using the standard Rauch-Tung-Streibel (RTS) smoother \cite{Rauch65} producing the expected state sequence and therefore leading to a deterministic $\mathcal{Q}$-function which is a quadratic in $\theta$. The M-step finds the updated parameter estimate by maximising this quadratic.
+where $\E_{\theta'}[\cdot]$ denotes expectation taken with respect to the distribution $\p(X|Y ; \theta')$ where $\theta'$ is the current parameter estimate. In this context \cite{Gibson05}, the algorithm consists of two steps: the E-step performs the expectation using the standard Rauch-Tung-Streibel (RTS) smoother \cite{Rauch65} producing the expected state sequence and therefore leading to a deterministic lower bound which is a quadratic in $\theta$. The M-step finds the updated parameter estimate by maximising this quadratic.
 
 \subsection{E-step}
 
@@ -244,14 +257,6 @@ The E-step involves forming the expectation in $Q(\theta,\theta')$, which itself
 
 \subsubsection{Field Weight Dynamics}
 
-Under the decomposition (\ref{eq:f decomp}) we can rewrite 
-\begin{equation}
-	\dist{f_t(s) - \hat{f}_t(s)}{Q^{-1}} = \dist{x_t - \hat{x}_t}{\Xi}
-\end{equation}
-where $\Xi = \int\int ds' ds ~ \phi(s')Q^{-1}(s',s)\phi(s)^\top$. Here the vector $x_t \in \R^{n_x}$ weights a vector of basis functions $\phi(s)$ that together decompose the current field $f_t(s)$, and similarly $\hat{x}_t \in \R^{n_x}$ weights the decomposition of $\hat{f}(s)$. This allows us to replace the infinite dimensional term in the likelihood with a finite dimensional term via the decomposition, giving
-\begin{equation}
-	\ell(\theta) =  \epsilon  - \frac{1}{2}\dist{x_t - \hat{x}_t}{\Xi} - \frac{1}{2}\dist{\yvec_t-\hat{\yvec_t}}{R^{-1}}
-\end{equation}
 In order to derive an expression for $\hat{x}_t$, recall that
 \begin{equation}
 	\hat{f}_t(s) = \sum_{i=1}^{p}( \F_i f_{t-i})(s) + \sum_{j=1}^{q}(\G_j g_{t-j})(s)
@@ -268,7 +273,6 @@ To isolate $\hat{x}_t$ on the left hand side, we pre-multiply both sides by $\ph
 	\sum_{j=1}^{q} \Phi^{-1} \int_\mathcal{S}ds \phi(s)(\G_j\phi^\top)(s)u_{t-j}
 	\end{split}
 \end{equation}
-where $\Phi = \int_\mathcal{S}ds\phi(s)\phi^\top(s)$.
 
 \begin{remark}
 	By defining the following matrices
@@ -332,7 +336,7 @@ The observation matrix is formed by substituting the field decomposition into \r
 \end{equation}
 where we use the notation $(\mathbb{H}\phi^\top)([s_1 ~  \ldots ~ s_{n_y}]^\top)$ to represent the row vector $(\mathbb{H}\phi^\top)(s)$ evaluated at multiple locations $s_1 \ldots s_{n_y}$ to give a matrix $(\mathbb{H}\phi^\top)([s_1 ~  \ldots ~ s_{n_y}]^\top) \in \R^{n_y \times n_x}$.
 
-The equations 
+The equations \ref{eqn:ssmodel_hidden} and \ref{eqn:ssmodel_observations} that define the state space model simply recapitulate the model distributions \ref{eqn:fdist} and \ref{eqn:ydist}
 
 \subsection{M-step}
 
