@@ -187,8 +187,23 @@ where $x_t \in \R^{n_x}$ is a vector of unknown weights, referred to as the stat
 where $a_i, b_j, c \in \R^{n_y}$ are the parameters of the kernels $F_i, G_j$ and $H$ respectively. Here $\psi(s,s') : \mathbb{R}^{n_\mathcal{S}} \times \mathbb{R}^{n_\mathcal{S}} \onto \mathbb{R}$ is a vector of basis functions drawn from the spanning set thingy.
 \end{assumption}
 
+Using the field decomposition (\ref{eq:f decomp}) we can rewrite 
+\begin{equation}
+	\dist{f_t(s) - \hat{f}_t(s)}{Q^{-1}} = \dist{x_t - \hat{x}_t}{\Xi}
+\end{equation}
+where
+\begin{equation}
+	\begin{split}
+	\Xi = \int\int ds' ds ~ \phi(s')Q^{-1}(s',s)\phi(s)^\top
+	\end{split}
+\end{equation}
+allowing us to replace the infinite dimensional term in the likelihood with a finite dimensional term via the decomposition, giving
+\begin{equation}
+	\ell(\theta) =  \epsilon  - \frac{1}{2}\dist{x_t - \hat{x}_t}{\Xi} - \frac{1}{2}\dist{\yvec_t-\hat{\yvec_t}}{R^{-1}}
+\end{equation}
+
 \begin{remark}
-	The above assumptions will not hold if $\mathcal{S}$ is defined as a subset of $\mathbb{R}^{n_\mathcal{S}}$. This is due to the fact that here the field $f$ would no longer be band limited due to the discontinuity at the edges of $\mathcal{S}$. It is worth noting that while we represent the field over an infinite space, the representation will be largely uninformative outside the observed region of interest. If we use local basis functions, such as squared exponential bases, then the representation of the field away from the centres of the bases will be described almost completely by the properties of the disturbance process.
+	The above assumptions will not hold if $\mathcal{S}$ is defined as a subset of $\mathbb{R}^{n_\mathcal{S}}$. This is due to the fact that the field $f$ would no longer be band limited due to the discontinuity at the edges of $\mathcal{S}$. It is worth noting that while we represent the field over an infinite space, the representation will be largely uninformative outside the observed region of interest. If we use local basis functions, such as squared exponential bases, then the representation of the field away from the centres of the bases will be described almost completely by the properties of the disturbance process.
 \end{remark}
 
 \begin{remark}
@@ -196,33 +211,36 @@ As a notational convenience, we have used the same basis functions in the decomp
 \end{remark}
 
 \begin{remark}
-	It is useful for what follows to derive the distribution of the system states from the distribution of the field. By substituting the decomposition \ref{eq:f decomp} into the field distribution \ref{eqn:fdist}, we get
+	It is useful for what follows to derive the distribution of the system states from the distribution of the field. Under the field decomposition we can write
 	\begin{equation}
-		p(x_t\phi(s)) = \mathrm{GP}(\hat{x}^\top\phi(s),Q(s,s))
+		\inner{f_t(s)}{\phi(s)}{} = \Phi x_t
 	\end{equation}
-	We can expand the left hand side trivially and, noting that we treat $\phi$ as a deterministic function:
-	 \begin{equation}
-		p(x_t|\phi(s))p(\phi(s)) = \mathrm{N}(\hat{x},\Sigma_w)\delta(\phi(s))
-	\end{equation}
-	where $\delta$ is the Dirac measure and we use the property that any finite sample from a Gaussian Process is normally distributed. Here the covariance matrix is given by
+where
 	\begin{equation}
-		\Sigma_w = \Phi^{-1}\dist{\phi}{Q} \Phi^{-1}
+		\begin{split}
+			\Phi = & \int_\mathcal{S}ds\phi(s)\phi(s)^\top \\
+	 		= & \inner{\phi}{\phi^\top}{}
+		\end{split}
 	\end{equation}
-	where
-	\begin{equation}
-	\Phi = \int_\mathcal{S}ds\phi(s)\phi^\top(s)
-	\end{equation}
-	This follows directly by substituting $f_t(s) = x_t^\top\phi(s)$ into the definition of the covariance function $Q(s,s')$ \cite{Scerri09}.
+Hence 
+\begin{equation}
+	x_t = \Phi^{-1}\inner{f_t(s)}{\phi(s)}{}
+\end{equation}
+We can derive the mean and covariance of $x_t$ directly:
+\begin{equation}
+	\begin{split}
+	E[x_t] = & \Phi^{-1} \inner{E[f_t(s)]}{\phi(s)}{} \\
+	= & \Phi^{-1} \inner{\phi}{\phi^\top}{} \hat{x}_t \\
+	= & \hat{x}_t
+	\end{split}
+\end{equation}
+and similarly for the covariance\cite{Scerri09}
+\begin{equation}
+	\label{eqn:covx}
+	\cov(x_t) = \Phi^{-1} \Xi \Phi^{-1}
+\end{equation}
+noting that $\Phi$ is symmetric.	
 \end{remark}
-
-Finally, using the field decomposition (\ref{eq:f decomp}) we can rewrite 
-\begin{equation}
-	\dist{f_t(s) - \hat{f}_t(s)}{Q^{-1}} = \dist{x_t - \hat{x}_t}{\Xi}
-\end{equation}
-where $\Xi = \int\int ds' ds ~ \phi(s')Q^{-1}(s',s)\phi(s)^\top$ allowing us to replace the infinite dimensional term in the likelihood with a finite dimensional term via the decomposition, giving
-\begin{equation}
-	\ell(\theta) =  \epsilon  - \frac{1}{2}\dist{x_t - \hat{x}_t}{\Xi} - \frac{1}{2}\dist{\yvec_t-\hat{\yvec_t}}{R^{-1}}
-\end{equation}
 
 \section{Parameter Estimation}
 \label{sec:estimation}
@@ -257,23 +275,29 @@ The E-step involves forming the expectation in $Q(\theta,\theta')$, which itself
 
 \subsubsection{Field Weight Dynamics}
 
-In order to derive an expression for $\hat{x}_t$, recall that
-\begin{equation}
-	\hat{f}_t(s) = \sum_{i=1}^{p}( \F_i f_{t-i})(s) + \sum_{j=1}^{q}(\G_j g_{t-j})(s)
-\end{equation}
-Using the decomposition of the fields $f_t(s)$ and $g_t(s)$ given in Assumption \ref{ass:fielddecomp} this can be re-written
-\begin{equation}
-	\phi(s)^\top\hat{x}_t = \sum_{i=1}^{p}(\F_i \phi^\top)(s)x_{t-i} + \sum_{j=1}^{q}(\G_j\phi^\top)(s)u_{t-j}
-\end{equation}
-To isolate $\hat{x}_t$ on the left hand side, we pre-multiply both sides by $\phi(s)$, integrate over space, and pre-multiply both sides by the resulting matrix, giving
+To derive an expression for $\hat{x}_t$, first note that
 \begin{equation}
 	\begin{split}
-	\hat{x}_t = 
-		\sum_{i=1}^{p} \Phi^{-1} \int_\mathcal{S}ds \phi(s)(\F_i \phi^\top)(s)x_{t-i} + \\
-	\sum_{j=1}^{q} \Phi^{-1} \int_\mathcal{S}ds \phi(s)(\G_j\phi^\top)(s)u_{t-j}
+	f_t(s) & = \hat{f}_t(s) + \GP{\mathbf{0}}{Q(s,s')}\\
+	 = & \sum_{i=1}^{p}( \F_i f_{t-i})(s) + \sum_{j=1}^{q}(\G_j g_{t-j})(s) + \GP{\mathbf{0}}{Q(s,s')}
 	\end{split}
 \end{equation}
-
+where we use the boldface $\mathbf{0}$ to indicate the Gaussian Process is zero-mean for all $s \in \mathcal{S}$. Using the decomposition of the fields $f_t(s)$ and $g_t(s)$ given in Assumption \ref{ass:fielddecomp} this can be re-written
+\begin{equation}
+	\begin{split}
+	\phi(s)^\top x_t = \sum_{i=1}^{p}(\F_i \phi^\top)(s)x_{t-i} + \sum_{j=1}^{q}(\G_j\phi^\top)(s)u_{t-j} \\ 
+	+ \GP{\mathbf{0}}{Q(s,s')}
+	\end{split}
+\end{equation}
+To isolate $x_t$ on the left hand side, we pre-multiply both sides by $\phi(s)$, integrate over space, and pre-multiply both sides by the resulting matrix, giving
+\begin{equation}
+	\begin{split}
+	x_t = 
+		\sum_{i=1}^{p} \Phi^{-1} \int_\mathcal{S}ds \phi(s)(\F_i \phi^\top)(s)x_{t-i} + \\
+	\sum_{j=1}^{q} \Phi^{-1} \int_\mathcal{S}ds \phi(s)(\G_j\phi^\top)(s)u_{t-j} + w_t
+	\end{split}
+\end{equation}
+where $w_t \sim N(0,\Sigma_w)$ and $\Sigma_w = \Phi^{-1}\Xi\Phi^{-1}$, recapitulating the result in \ref{eqn:covx}.
 \begin{remark}
 	By defining the following matrices
 	\begin{equation}
@@ -284,12 +308,12 @@ To isolate $\hat{x}_t$ on the left hand side, we pre-multiply both sides by $\ph
 		\label{eqn:arxB}
 		B_j = \Phi^{-1} \inner{\phi(s)}{\phi^\top(s)}{G_j}
 	\end{equation}
-	we can write an expression for $\hat{x}$ in multivariate ARX($p,q$) \cite{Ljung} form:
+	we can write an expression for $x$ in multivariate ARX($p,q$) \cite{Ljung} form:
 	\begin{equation}
 		\label{eqn:arx}
-		\hat{x}_t = \sum_{i=1}^{p} A_i^\top x_{t-i} +  \sum_{j=1}^{q} B_j^\top u_{t-j}
+		x_t = \sum_{i=1}^{p} A_i^\top x_{t-i} +  \sum_{j=1}^{q} B_j^\top u_{t-j} + w_t
 	\end{equation}
-	making clear the effect of the decomposition on the HIDEX model in Definition \ref{def:hidex}: we are representing an infinite dimensional spatiotemporal model using a finite (although probably high) dimensional vector autoregressive model with exogenous inputs, via a basis function decomposition of the field. The key to this approach is that, unlike standard vector autoregressive models, the number of field basis functions $n_x$, is independent to the complexity of $F_i$ or $G_j$. Therefore we can increase the spatial resolution, or spatial extent, of our model without generating more parameters to learn.
+	making clear the effect of the decomposition on the HIDEX model in Definition \ref{def:hidex}: we are representing an infinite dimensional spatiotemporal model using a finite (although probably high) dimensional vector autoregressive model with exogenous inputs, via a basis function decomposition of the field. The key to this approach is that, unlike standard vector autoregressive models, the number of field basis functions $n_x$, is independent to the complexity of $F_i$ or $G_j$. Therefore we can increase the spatial resolution of our observations, or spatial extent of our model without generating more parameters to learn.
 \end{remark}
 
 \todo{show how this can be placed into the standard state-space formulation, and hence applicable for filtering using the RTS smoother}
@@ -316,7 +340,7 @@ If we define the state $\xvec_t \in \R^{pn_x}$ and the input $\uvec_t \in \R^{qn
 \begin{equation}
 	\uvec_t = [u_t^\top ~ u_{t-1}^\top ~ \ldots ~ u_{t-q+1}^\top]^\top
 \end{equation}
-then the `state' of the decomposed system can be thought of as the information required to predict the next field. With these definitions, and the recursive relationship on $\hat{x}$ defined above, the formation of $A$, $B$ and $C$ are trivial. The state transition matrix is defined by concatenating the $A_i$s defined in \ref{eqn:arxA}:
+then the `state' of the decomposed system can be thought of as the information in the current and previous fields required to predict the next field. With these definitions, and the recursive relationship on $x$ defined above, the formation of $A$, $B$ and $C$ are trivial. The state transition matrix is defined by concatenating the $A_i$s defined in \ref{eqn:arxA}:
 \begin{equation}
 	A = \begin{bmatrix}
 	A_1 & A_2 & \ldots & A_p \\
@@ -336,7 +360,6 @@ The observation matrix is formed by substituting the field decomposition into \r
 \end{equation}
 where we use the notation $(\mathbb{H}\phi^\top)([s_1 ~  \ldots ~ s_{n_y}]^\top)$ to represent the row vector $(\mathbb{H}\phi^\top)(s)$ evaluated at multiple locations $s_1 \ldots s_{n_y}$ to give a matrix $(\mathbb{H}\phi^\top)([s_1 ~  \ldots ~ s_{n_y}]^\top) \in \R^{n_y \times n_x}$.
 
-The equations \ref{eqn:ssmodel_hidden} and \ref{eqn:ssmodel_observations} that define the state space model simply recapitulate the model distributions \ref{eqn:fdist} and \ref{eqn:ydist}
 
 \subsection{M-step}
 
@@ -477,7 +500,7 @@ where
 		{Q^{-1}}
 \end{equation}
 
-We can write the second term \ref{eqn:exploglik} as quadratic in the unknonwn parameters $c$ following the same procedure: simply expand $\E[\dist{\yvec_t-\hat{\yvec}_t}{R^{-1}}]$ and apply the kernel decomposition given in Assumption \ref{ass:kerndecomp}. This gives
+We can write the second term \ref{eqn:exploglik} as quadratic in the unknown parameters $c$ following the same procedure: simply expand $\E[\dist{\yvec_t-\hat{\yvec}_t}{R^{-1}}]$ and apply the kernel decomposition given in Assumption \ref{ass:kerndecomp}. This gives
 \begin{equation}
 	\label{eqn:norm_y_error}
 	\E[\dist{\yvec_t-\hat{\yvec}_t}{R^{-1}}] = c^\top \gamma^c + c^\top \Gamma^c c
