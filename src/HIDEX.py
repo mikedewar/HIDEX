@@ -14,23 +14,22 @@ logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
 class HIDEX:
     
-    
     def __init__(self, F, G, H, f0, Q, R):
         """
         Parameters
         ==========
         F : list
-                list of dynamic kernels
+            list of dynamic kernels
         G : list
-                list of input kernels
+            list of input kernels
         H : Kernel object
-                observation kernel
+            observation kernel
         f0 : Field object
-                initial field
+            initial field
         Q : CovarianceFunction object
-                covariance of the field
+            covariance of the field
         R : matrix
-                covariance matrix of the observation noise
+            covariance matrix of the observation noise
         """
         # process and store arguments
         self.p = len(F)
@@ -40,6 +39,7 @@ class HIDEX:
         self.F = F
         self.G = G
         self.H = H
+        self.Q = Q
         # form Phi = \int phi(s) phi^T(s) ds
         self.Phi = outer(self.phi, self.phi)
         # store the inversion
@@ -53,7 +53,7 @@ class HIDEX:
         Parameters
         ==========
         U : list
-                list of input fields
+            list of input fields
         """
         self.log.info('simulating HIDEX model')
         raise NotImplementedError
@@ -62,7 +62,7 @@ class HIDEX:
         self.log.info('forming LDS model')
         # form the state space representation
         A = np.hstack([
-                self.Phi_inv * outer(self.phi, self.phi, F) for F in self.F
+            self.Phi_inv * outer(self.phi, self.phi, F) for F in self.F
         ])
         # this is [A_1 A_2 .. A_p; I 0]
         I = np.eye(len(self.phi)*(self.p-1))
@@ -70,7 +70,8 @@ class HIDEX:
         A = np.vstack([A, np.hstack([I, O])])
         if self.G:
             B = np.hstack([
-                    self.Phi_inv * outer(self.phi, self.phi, G) for G in self.G
+                self.Phi_inv * outer(self.phi, self.phi, G) 
+                for G in self.G
             ])
             # this is [B_1 B_2 .. B_q; I 0]
             I = np.eye(len(self.phi)*(self.q-1))
@@ -134,10 +135,18 @@ class HIDEX:
         gamma_c = inner(y[t], P_op(f[t]), Rinv)
         for i in range(self.p):
             for idash in range(self.p):
-                Gamma_a[i, idash] = inner(P_op(f[t-i]), P_op(f[t-idash]), Qinv)
+                Gamma_a[i, idash] = inner(
+                    P_op(f[t-i]), 
+                    P_op(f[t-idash]), 
+                    Qinv
+                )
         for j in range(self.q):
             for jdash in range(self.q):
-                Gamma_b[j, jdash] = inner(P_op(g[t-j]), P_op(g[t-jdash]), Qinv)
+                Gamma_b[j, jdash] = inner(
+                    P_op(g[t-j]), 
+                    P_op(g[t-jdash]), 
+                    Qinv
+                )
         for i in range(self.p):
             for j in range(self.q):
                 Gamma_ab[i, j] = inner(P_op(f[t-i]), P_op(f[t-j]), Qinv)
@@ -158,9 +167,9 @@ class HIDEX:
         # form the final large matrices
         gamma = np.hstack([ga, gb, gamma_c])
         Gamma = form_block_matrix([
-                [Ga, Gab, O(na, nc)],
-                [Gab.T, Gb, O(nb, nc)],
-                [O(nc, na), O(nc, nb), Gamma_c]
+            [Ga, Gab, O(na, nc)],
+            [Gab.T, Gb, O(nb, nc)],
+            [O(nc, na), O(nc, nb), Gamma_c]
         ])
         # perform the maximisation
         theta = 0.5 * Gamma.I * gamma
@@ -169,12 +178,17 @@ class HIDEX:
         nx = len(self.psi)
         # watch carefully!
         # a is composed of the first p*nx elements of the list theta_l
-        # so we pop theses from the list. Then reshape them into an array
+        # so we pop these from the list. Then reshape them into an array
         # where each column of this array corresponds to a_i
-        a = pb.array([theta_l.pop(0) for i in range(self.p*nx)]).reshape(nx, self.p)
-        # similarly, b is composed of the first q*nx of the now shortened list!
-        # so we just do the same thing, pop the first q*nx elements and reshape
-        b = pb.array([theta_l.pop(0) for i in range(self.q*nx)]).reshape(nx, self.q)
+        a = pb.array([
+            theta_l.pop(0) for i in range(self.p*nx)
+        ]).reshape(nx, self.p)
+        # similarly, b is composed of the first q*nx of the now shortened 
+        # list! so we just do the same thing, pop the first q*nx elements and 
+        # reshape
+        b = pb.array([
+            theta_l.pop(0) for i in range(self.q*nx)
+        ]).reshape(nx, self.q)
         # finally, c is all that's left. So just make it into an array!
         c = pb.array(theta_l)
         # form the new kernels. We need to transpose a and b because they're
@@ -200,8 +214,11 @@ class HIDEX:
             i+=1
             if i == max_its:
                 not_reached_max_its = 0
-            if self.change_in_likelihood(Y) < threshold:
-                not_converged = 0
+            try:
+                if self.change_in_likelihood(Y) < threshold:
+                    not_converged = 0
+            except NotImplementedError:
+                print "you should really do this at some point"
 
     def change_in_likelihood(self, Y):
         raise NotImplementedError

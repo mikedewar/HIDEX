@@ -60,7 +60,7 @@
 \section{The HIDEX($p,q$) Model}
 \label{sec:model}
 
-We first introduce the HIDEX($p,q$) model. We then derive the log-likelihood function and introduce a set of decompositions which will be used in Section \ref{sec:estimation} to make the system identification problem tractable. 
+We first introduce the HIDEX($p,q$) model. We then derive its log-likelihood function and introduce a set of decompositions which will be used in Section \ref{sec:estimation} making the system identification problem tractable. 
 
 The model is defined across spatial locations $s \in \mathcal{S} = \mathbb{R}^{n_\mathcal{S}}$ and at times $t \in \mathbb{Z}_+$. Here $n_\mathcal{S} \in \{1,2,3\}$ is the spatial dimension of the system under study, and, as time is always one dimensional, it is $n_\mathcal{S}$ that we use to describe the dimension of the model. 
 
@@ -83,7 +83,7 @@ The model is defined across spatial locations $s \in \mathcal{S} = \mathbb{R}^{n
 	\label{eqn:hidex-obs}
 	y_t(s_k) = (\mathbb{H}f_t)(s_k) + \epsilon
 	\end{equation}
-	where $\F_i,\G_j,\mathbb{H}$ are operators with spatial mixing kernels $F_i(s,r), G_j(s,r), H(s,r)$ respectively. Here $f_t(s)$ is the hidden field and $g_{t}(s)$ is the input field at time $t$; $e(s)$ is the disturbance. The nonnegative model orders $p,q$ are the orders of the autoregression and the input respectively. The output $y_t(s_k)$ is a point in the observable field at spatial location $s_k$, corrupted by the noise process $\epsilon$.
+	where $\F_i,\G_j,\mathbb{H}$ are integral operators with spatial mixing kernels $F_i(s,r), G_j(s,r), H(s,r)$ respectively. Here $f_t(s)$ is the hidden field and $g_{t}(s)$ is the input field at time $t$; $e(s)$ is the disturbance. The nonnegative model orders $p,q$ are the orders of the autoregression and the input respectively. The output $y_t(s_k)$ is a point in the observable field at spatial location $s_k$, corrupted by the noise process $\epsilon$.
 \end{definition}
 
 \begin{assumption}[Stochasticity]
@@ -212,24 +212,22 @@ As a notational convenience, we have used the same basis functions in the decomp
 
 \begin{remark}
 	It is useful for what follows to derive the distribution of the system states from the distribution of the field. Under the field decomposition we can write
-	\begin{equation}
-		\inner{f_t(s)}{\phi(s)}{} = \Phi x_t
-	\end{equation}
-where
-	\begin{equation}
-		\begin{split}
-			\Phi = & \int_\mathcal{S}ds\phi(s)\phi(s)^\top \\
-	 		= & \inner{\phi}{\phi^\top}{}
-		\end{split}
-	\end{equation}
-Hence 
 \begin{equation}
-	x_t = \Phi^{-1}\inner{f_t(s)}{\phi(s)}{}
+	\inner{\phi(s)}{f_t(s)}{} = \inner{\phi(s)}{\phi(s)^\top}{} x_t
+\end{equation}
+Hence
+\begin{equation}
+	x_t = \Phi^{-1}\inner{\phi(s)}{f_t(s)}{}
+\end{equation}
+where
+\begin{equation}
+		\Phi =  \int_\mathcal{S}ds\phi(s)\phi(s)^\top
+ 		= \inner{\phi}{\phi^\top}{}
 \end{equation}
 We can derive the mean and covariance of $x_t$ directly:
 \begin{equation}
 	\begin{split}
-	E[x_t] = & \Phi^{-1} \inner{E[f_t(s)]}{\phi(s)}{} \\
+	\E[x_t] = & \Phi^{-1} \inner{\phi(s)}{\E[f_t(s)]}{} \\
 	= & \Phi^{-1} \inner{\phi}{\phi^\top}{} \hat{x}_t \\
 	= & \hat{x}_t
 	\end{split}
@@ -245,7 +243,7 @@ noting that $\Phi$ is symmetric.
 \section{Parameter Estimation}
 \label{sec:estimation}
 
-In order to estimate the shape of the spatial mixing kernels, we apply the EM algorithm, following the derivation given in \cite{GibsonNinness}. We first derive the E-step, giving an expression for the distribution of the field at each point in time, given the data. We then derive the M-step, finding an analytical maximum of a tight lower bound on the likelihood function.
+In order to estimate the shape of the spatial mixing kernels, we apply the EM algorithm, following the derivation given in \cite{GibsonNinness}. We first derive the E-step, giving an expression for the distribution of the field at each point in time, conditional on the data. We then derive the M-step, finding an analytical maximum of a tight lower bound on the likelihood function.
 
 The key insights here are:
 \begin{itemize}
@@ -316,8 +314,6 @@ where $w_t \sim N(0,\Sigma_w)$ and $\Sigma_w = \Phi^{-1}\Xi\Phi^{-1}$, recapitul
 	making clear the effect of the decomposition on the HIDEX model in Definition \ref{def:hidex}: we are representing an infinite dimensional spatiotemporal model using a finite (although probably high) dimensional vector autoregressive model with exogenous inputs, via a basis function decomposition of the field. The key to this approach is that, unlike standard vector autoregressive models, the number of field basis functions $n_x$, is independent to the complexity of $F_i$ or $G_j$. Therefore we can increase the spatial resolution of our observations, or spatial extent of our model without generating more parameters to learn.
 \end{remark}
 
-\todo{show how this can be placed into the standard state-space formulation, and hence applicable for filtering using the RTS smoother}
-
 \subsubsection{State Space Model Form}
 
 This recursive relationship between the field weights over time, and between the field weights and the observations, defines a linear, Gaussian state space model. Hence the posterior distribution of the states $x_t$ given a parameter set $\theta'$, and therefore the posterior distribution of the set of fields $\mathcal{F}$, is given by the very well-known Rauch-Tung-Streibel smoother (sometimes called the Kalman Smoother).
@@ -347,7 +343,7 @@ then the `state' of the decomposed system can be thought of as the information i
 	\multicolumn{3}{c}{I_{(p-1)n_x}} & 0_{(p-1)n_x \times n_x}
 	\end{bmatrix}
 \end{equation}
-where $I_n$ denotes the $n\times n$ identity matrix and $0_{m\times n}$ denotes a $m\times n$ matrix of zeroes. Similarly for the input matrix:
+where $0_{m\times n}$ denotes a $m\times n$ matrix of zeroes. Similarly for the input matrix:
 \begin{equation}
 	B = \begin{bmatrix}
 	B_1 & B_2 & \ldots & B_q \\
@@ -358,7 +354,7 @@ The observation matrix is formed by substituting the field decomposition into \r
 \begin{equation}
 	C = [(\mathbb{H}\phi^\top)([s_1 ~ \ldots ~ s_{n_y}]^\top) ~ 0_{n_y \times (p-1)n_x}]
 \end{equation}
-where we use the notation $(\mathbb{H}\phi^\top)([s_1 ~  \ldots ~ s_{n_y}]^\top)$ to represent the row vector $(\mathbb{H}\phi^\top)(s)$ evaluated at multiple locations $s_1 \ldots s_{n_y}$ to give a matrix $(\mathbb{H}\phi^\top)([s_1 ~  \ldots ~ s_{n_y}]^\top) \in \R^{n_y \times n_x}$.
+where we again use the notation $(\mathbb{H}\phi^\top)([s_1 ~  \ldots ~ s_{n_y}]^\top)$ to represent the row vector $(\mathbb{H}\phi^\top)(s)$ evaluated at multiple locations $s_1 \ldots s_{n_y}$ to give a matrix $(\mathbb{H}\phi^\top)([s_1 ~  \ldots ~ s_{n_y}]^\top) \in \R^{n_y \times n_x}$.
 
 
 \subsection{M-step}
@@ -367,7 +363,7 @@ We need to maximise the expected log-likelihood function
 \begin{equation}
 	\label{eqn:exploglik}
 	\begin{split}
-	Q(\theta,\theta')] = \epsilon - \frac{1}{2}\sum_t\E_{\theta'}[\dist{f_t(s) - \hat{f}_t(s)}{Q^{-1}}]  \\
+	Q(\theta,\theta') = \epsilon - \frac{1}{2}\sum_t\E_{\theta'}[\dist{f_t(s) - \hat{f}_t(s)}{Q^{-1}}]  \\
 	- \frac{1}{2}\sum_t\E_{\theta'}[\dist{\yvec_t-\hat{\yvec}_t}{R^{-1}}]
 	\end{split}
 \end{equation}
@@ -381,7 +377,7 @@ due to the fact that the expectation of the mean field $\hat{f}$ is itself, we c
 \begin{equation}
 	\begin{split}
 	\label{eqn:exloglik}
-	Q(\theta,\theta')] = \epsilon
+	Q(\theta,\theta') = \epsilon
 	- \inner{\E_{\theta'}[f_t(s)]}{\hat{f}_t(s)}{Q^{-1}}
 	- \frac{1}{2}\sum_t \dist{\hat{f}_t(s)}{Q^{-1}} \\
 	- \inner{\E_{\theta'}[\yvec_t]}{\hat{\yvec}_t}{R^{-1}}
