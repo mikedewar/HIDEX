@@ -1,10 +1,11 @@
-from HIDEX_elements import Field, Kernel, inner, outer, CovarianceFunction
+from HIDEX_elements import Field, Kernel, CovarianceFunction
+from inner import inner, outer
 from pyLDS import LDS
 import numpy as np
 
 import sys
 import logging
-logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
 
 
 # this class implements a HIDEX(p, q) spatiotemporal model. This represents
@@ -14,7 +15,7 @@ logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
 class HIDEX:
     
-    def __init__(self, F, G, H, f0, Q, R):
+    def __init__(self, F, G, H, f0, Q, R, Pi0, obs_locns):
         """
         Parameters
         ==========
@@ -30,16 +31,24 @@ class HIDEX:
             covariance of the field
         R : matrix
             covariance matrix of the observation noise
+        Pi0 : matrix
+            initial covariance matrix of the field weights
+        obs_locns : list
+            list of observation locations
         """
         # process and store arguments
         self.p = len(F)
         self.q = len(G)
-        self.psi = Field(F[0].bases)
-        self.phi = Field(f0.bases)
+        self.psi = F[0].bases
+        self.phi = f0.bases
         self.F = F
         self.G = G
         self.H = H
         self.Q = Q
+        self.R = R
+        self.f0 = f0
+        self.Pi0 = Pi0
+        self.obs_locns = obs_locns
         # form Phi = \int phi(s) phi^T(s) ds
         self.Phi = outer(self.phi, self.phi)
         # store the inversion
@@ -79,11 +88,38 @@ class HIDEX:
             B = np.vstack([B, np.hstack([I, O])])
         else:
             B = None
-        C = inner(self.H, self.phi)
+        # C = <H,phi>(s1 ... sn)
+        # <H,phi> = a^T <psi, phi>
+        Cop = np.array([inner(self.H, phi_i) for phi_i in self.phi])
+        # So we need to go through each basis function in Cop (C-operator) and
+        # evalutate it at each observation location. This begs the question of
+        # where the observation locations should come into the program. For 
+        # the moment, though, we'll assume them fixed and store them in the 
+        # HIDEX object
+        C = np.zeros((len(self.obs_locns),len(self.phi)*(self.p)))
+        for i,s in enumerate(self.obs_locns):
+            for j,basis_function in enumerate(Cop):
+                C[i,j] = basis_function(s)
         # make the covariance matrices
-        Sw = inner(self.phi, self.phi, self.Q)
+        Sw = np.zeros(
+            (len(self.phi)*(self.p), len(self.phi)*(self.p))
+            ,dtype=float
+        )
+        for i, basis_i in enumerate(self.phi):
+            for j, basis_j in enumerate(self.phi):
+                Sw[i,j] = inner(basis_i, basis_j, self.Q)
+        # form the initial state
+        x0 = np.hstack([self.f0.weights,np.zeros((len(self.phi)*(self.p-1)))])
+        # turn everything into matrices for the LDS model
+        A = np.matrix(A)
+        B = np.matrix(B)
+        C = np.matrix(C)
+        Sw = np.matrix(Sw)
+        Sv = np.matrix(self.R)
+        x0 = np.matrix(x0).T
+        Pi0 = np.matrix(self.Pi0)
         # make a state space model
-        return LDS.LDS(A, B, C, Sw, self.R, x0)
+        return LDS.LDS(A, B, C, Sw, Sv, x0, Pi0)
 
 
     def estimate_fields(self, U, Y):
@@ -129,9 +165,17 @@ class HIDEX:
         Gamma_ab = np.empty((self.p, self.q))
         # form gammas
         for i in range(self.p):
-            gamma_a[i] = inner(f[t], P_op(f[t-i]), Qinv)
+            gamma_a[i] = inner(
+                f[t], 
+                P_op(f[t-i]), 
+                Qinv
+            )
         for j in range(self.q):
-            gamma_b[j] = inner(f[t], P_op(f[t-i]), Qinv)
+            gamma_b[j] = inner(
+                f[t], 
+                P_op(f[t-i]), 
+                Qinv
+            )
         gamma_c = inner(y[t], P_op(f[t]), Rinv)
         for i in range(self.p):
             for idash in range(self.p):
@@ -149,8 +193,16 @@ class HIDEX:
                 )
         for i in range(self.p):
             for j in range(self.q):
-                Gamma_ab[i, j] = inner(P_op(f[t-i]), P_op(f[t-j]), Qinv)
-        Gamma_c = inner(P_op(f[t]), P_op(f[t]), Rinv)
+                Gamma_ab[i, j] = inner(
+                    P_op(f[t-i]), 
+                    P_op(f[t-j]), 
+                    Qinv
+                )
+        Gamma_c = inner(
+            P_op(f[t]), 
+            P_op(f[t]), 
+            Rinv
+        )
         # turn these into the large matrices
         ga = np.hstack(gamma_a)
         gb = np.hstack(gamma_b)
@@ -167,9 +219,9 @@ class HIDEX:
         # form the final large matrices
         gamma = np.hstack([ga, gb, gamma_c])
         Gamma = form_block_matrix([
-            [Ga, Gab, O(na, nc)],
-            [Gab.T, Gb, O(nb, nc)],
-            [O(nc, na), O(nc, nb), Gamma_c]
+            [Ga,        Gab,        O(na, nc)],
+            [Gab.T,     Gb,         O(nb, nc)],
+            [O(nc, na), O(nc, nb),  Gamma_c]
         ])
         # perform the maximisation
         theta = 0.5 * Gamma.I * gamma
