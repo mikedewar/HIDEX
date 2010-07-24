@@ -5,7 +5,7 @@ import numpy as np
 
 import sys
 import logging
-logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
+logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
 
 # this class implements a HIDEX(p, q) spatiotemporal model. This represents
@@ -56,6 +56,8 @@ class HIDEX:
         # logging
         self.log = logging.getLogger('Field')
         self.log.info('Initialised new HIDEX model')
+        # genreate an LDS representation
+        self.LDS = self.gen_LDS()
 
     def simulate(self, U):
         """

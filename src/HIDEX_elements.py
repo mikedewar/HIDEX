@@ -1,7 +1,7 @@
 import numpy as np
 import logging
 import sys
-logging.basicConfig(stream=sys.stdout,level=logging.DEBUG)
+logging.basicConfig(stream=sys.stdout,level=logging.WARNING)
 
 class Field:
     def __init__(self,bases,weights=None):
@@ -45,6 +45,10 @@ class Field:
             return self
         else:
             raise ValueError("trying to add %s to a Field!"%other)
+    
+    def __call__(self,x):
+        return sum([weight*basis(x) 
+            for weight,basis in zip(self.weights,self.bases)])
 
 
 class Kernel:
@@ -55,52 +59,7 @@ class Kernel:
         self.log = logging.getLogger('Kernel')
         self.log.debug("formed new Kernel")
 
-    def inner(self,f):
-
-        ### TODO
-
-        if isinstance(f,Field):
-            # this is \int K(s,s') f(s) ds
-            # should return a field
-
-            # the returned field's weights are the weight of the field
-
-            # the basis functions of the field are the result of the inner
-            # product of the kernel weights with the matrix-valued function
-            # formed by the outer product of the kernel basis functions and
-            # the field basis functions:
-            #
-            # = a^T \int psi(s,r) phi^T(r) dr x_t
-
-            # so first form the outer product. We pretend psi and phi are
-            # fields just so `outer` knows how to deal
-            outer(Field(self.bases),Field(f.bases))
-
-        elif isinstance(f,BasisFunction):
-            self.log.debug("forming \int K(s,s') phi(s) ds")
-            # this will yield a bunch of fields all with a single weight/basis
-            fields = [b.inner(f) for b in self.bases]
-            field_weights = [fi.weights[0] for fi in fields]
-            try:
-                weights = [w1*w2 for w1,w2 in zip(field_weights, self.weights)]
-            except:
-                print list(self.weights)
-                print field_weights
-                raise
-            bases = [fi.bases[0] for fi in fields]
-            # 
-            assert all([isinstance(b,BasisFunction) for b in bases]), bases 
-            try:
-                return Field(bases,weights)
-            except:
-                self.log.debug("f: %s"%f)
-                self.log.debug("b: %s"%self.bases[0])
-                self.log.debug(self.bases[0].inner(f))
-                raise
-        else:
-            raise NotImplementedError
-
-
+    
 class BasisFunction:
     def __init__(self,dim):
         self.dim = dim
@@ -108,14 +67,15 @@ class BasisFunction:
 
     def inner(self,other,weight):
         raise NotImplementedError
+    
+    def __call__(self,x):
+        raise NotImplementedError
 
 
 class Gaussian(BasisFunction):
     """
     Parameters
     ==========
-    dim : scalar
-            dimension of the basis function
     centre : scalar or matrix
             centre of the basis function
     width : scalar or matrix
@@ -131,7 +91,10 @@ class Gaussian(BasisFunction):
         BasisFunction.__init__(self,dim)
         self.centre = centre
         self.width = width
-        self.invwidth = width**-1
+        if self.dim == 1:
+            self.invwidth = width**-1
+        else:
+            self.invwidth = np.linalg.inv(width)
         self.constant = constant
         # consistency assertions
         if self.dim > 1:
@@ -140,7 +103,7 @@ class Gaussian(BasisFunction):
         self.log.debug("formed new Gaussian BasisFunction")
 
     def inner(self,other):
-        assert isinstance(other,Gaussian):
+        assert isinstance(other, (Gaussian,SquaredExponential))
         if self.dim == 1 and other.dim == 1:
             # should return a scalar
             self.log.debug("forming \int \phi(s) \phi(s) ds")
@@ -153,19 +116,13 @@ class Gaussian(BasisFunction):
             return self.constant * other.constant * (np.pi)**0.5 * \
                 (cij**-0.5) * np.exp(-rij)
         elif self.dim == 2 and other.dim == 1:
-            # should return a Field
+            # should return a basis function
             self.log.debug("forming \int \psi(s,s') \phi(s) ds")
             # this is probably only going to work with ISOTROPIC
             # Qs of the form Q(s,s') = Q(s-s') centred at the
             # origin, and for 1D fields!!! Ugh! Really need to sit
             # down and do this with a coffee, some sun, and a nice
             # pen. Maybe a light breeze.
-            
-            # TODO this code is replicated in the Covariance
-            # function code. Thought: Covariance is a special case
-            # of a Kernel and/or a special case of a BasisFunction
-            # so maybe it should inherit from one of these or
-            # something
             
             # this bit's crap
             if self.dim == 1:
@@ -178,15 +135,25 @@ class Gaussian(BasisFunction):
             # this next line should be det(sum_invwidths)
             constant = np.pi**0.5 * sum_invwidths**0.5
             width = sum_invwidths * (prod_invwidths)**-1
-            basis = Gaussian(other.centre, width, constant)
-            f = Field([basis],[constant])
-            return f
+            return Gaussian(other.centre, width, constant)
         else:
+            print self.dim
+            print other.dim
             raise NotImplementedError
+    
+    def __call__(self,x):
+        if self.dim == 1:
+            return self.constant * np.exp(
+                -0.5*(x-self.centre)**2 * self.invwidth
+            )
+        else:
+            return self.constant * np.exp(
+                -0.5 * np.inner( np.inner(
+                    (x - self.centre), self.invwidth),(x - self.centre))
+            )
+
         
     
-
-
 class CovarianceFunction(Kernel):
     def __init__(self,dim):
         self.dim = dim
@@ -194,22 +161,25 @@ class CovarianceFunction(Kernel):
     
 
 class SquaredExponential(CovarianceFunction):
-    def __init__(self,dim,width,constant):
+    def __init__(self,width):
         """
         Parameters
         ==========
-        dim : scalar
-                dimension of the covariance function
         width : matrix
                 width matrix of the covariance function
         constant :
                 constant that premultiplies the covariance function
         """
-        CovarianceFunction.__init__(self,dim)
-        self.centre = np.zeros(dim)
-        self.width = np.matrix(width)
-        self.constant = constant
-        self.invwidth = self.width.I
+        CovarianceFunction.__init__(self, width.shape[0])
+        # we construct the covariance function as though it was a kernel, which
+        # of course it is, except it's only ever going ot have one 'base' - a
+        # Gaussian.
+        self.bases = [Gaussian(
+            centre = np.zeros(width.shape[0]),
+            width = np.matrix(width),
+            constant = 1
+        )]
+        self.weights = [1]
         self.log.debug("formed new SquaredExponential CovarianceFunction")
     
 
