@@ -60,11 +60,14 @@ class Kernel:
         self.log = logging.getLogger('Kernel')
         self.log.debug("formed new Kernel")
     
-    def plot(self,x):
-        y = np.zeros(len(x))
+    def plot(self,x,y):
+        X,Y = np.meshgrid(x,y)
+        z = np.zeros((len(x),len(y)))
         for basis in self.bases:
-            y += np.array([basis(xi) for xi in x])
-        plt.plot(x,y)
+            for i in range(len(x)):
+                for j in range(len(y)):
+                    z[i,j] += basis((X[i,j],Y[i,j]))
+        plt.imshow(z)
 
     
 class BasisFunction:
@@ -96,11 +99,13 @@ class Gaussian(BasisFunction):
         except TypeError:
             dim = 1
         BasisFunction.__init__(self,dim)
-        self.centre = centre
-        self.width = width
         if self.dim == 1:
+            self.centre = centre
+            self.width = width
             self.invwidth = width**-1
         else:
+            self.centre = np.array(centre)
+            self.width = np.array(width)
             self.invwidth = np.linalg.inv(width)
         self.constant = constant
         # consistency assertions
@@ -114,14 +119,10 @@ class Gaussian(BasisFunction):
         if self.dim == 1 and other.dim == 1:
             # should return a scalar
             self.log.debug("forming \int \phi(s) \phi(s) ds")
-            cij=self.width + other.width
-            uij=cij**-1 * (self.width*self.centre +
-                    other.width*other.centre)
-            rij=(self.centre**2 * self.width) + \
-            (other.centre**2 * other.width) - \
-                (uij**2 * cij)
-            return self.constant * other.constant * (np.pi)**0.5 * \
-                (cij**-0.5) * np.exp(-rij)
+            cij=(self.width+other.width)/(self.width*other.width)
+		    rij=(self.center-other.center)**2/(self.width+other.width)
+		    constant = self.constant*other.constant*(np.pi)**(self.dim*0.5)
+		    return constant*(cij**(-0.5*self.dim))*np.exp(-rij))
         elif self.dim == 2 and other.dim == 1:
             # should return a basis function
             self.log.debug("forming \int \psi(s,s') \phi(s) ds")
@@ -154,10 +155,15 @@ class Gaussian(BasisFunction):
                 -0.5*(x-self.centre)**2 * self.invwidth
             )
         else:
+            assert len(x) == len(self.centre), (x,self.centre)
             return self.constant * np.exp(
                 -0.5 * np.inner( np.inner(
                     (x - self.centre), self.invwidth),(x - self.centre))
             )
+    
+    def plot(self,x,*args):
+        y = [self(xi) for xi in x]
+        plt.plot(x,y,*args)
 
         
     
