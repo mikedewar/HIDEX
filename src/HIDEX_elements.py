@@ -120,30 +120,16 @@ class Gaussian(BasisFunction):
             # should return a scalar
             self.log.debug("forming \int \phi(s) \phi(s) ds")
             cij=(self.width+other.width)/(self.width*other.width)
-		    rij=(self.center-other.center)**2/(self.width+other.width)
+		    rij=(self.centre-other.centre)**2/(self.width+other.width)
 		    constant = self.constant*other.constant*(np.pi)**(self.dim*0.5)
 		    return constant*(cij**(-0.5*self.dim))*np.exp(-rij))
         elif self.dim == 2 and other.dim == 1:
             # should return a basis function
             self.log.debug("forming \int \psi(s,s') \phi(s) ds")
-            # this is probably only going to work with ISOTROPIC
-            # Qs of the form Q(s,s') = Q(s-s') centred at the
-            # origin, and for 1D fields!!! Ugh! Really need to sit
-            # down and do this with a coffee, some sun, and a nice
-            # pen. Maybe a light breeze.
-            
-            # this bit's crap
-            if self.dim == 1:
-                invsigma_Q = self.invwidth
-            else:
-                invsigma_Q = self.invwidth[0,0]
-            # this bit needs work
-            sum_invwidths = invsigma_Q + other.invwidth
-            prod_invwidths = invsigma_Q * other.invwidth
-            # this next line should be det(sum_invwidths)
-            constant = np.pi**0.5 * sum_invwidths**0.5
-            width = sum_invwidths * (prod_invwidths)**-1
-            return Gaussian(other.centre, width, constant)
+            constant = (pb.pi*self.width*other.width)/(self.width+other.width)
+		    width = self.width + other.width
+		    centre = self.centre + other.centre
+		    return Basis(centre,width,constant)
         else:
             print self.dim
             print other.dim
