@@ -19,22 +19,23 @@ def example_1():
 	F = [
 	    Kernel(
 	        bases = [
-	            Gaussian((0,0), np.eye(2), 1),
-	            Gaussian((0,0), 2*np.eye(2), 1)
+	            Gaussian(0, 1, 1),
+	            Gaussian(0, 1, 1),
+	            Gaussian(0, 1, 1)
 	        ],
 	        weights = [0.1, -0.05]),
 	]
 	G = [
 	    Kernel(
-	        bases = [Gaussian((0,0),np.eye(2),1)],
+	        bases = [Gaussian(0,1,1)],
 	        weights = [0.1]
 	    ),
 	]
-	H = Kernel([Gaussian((0,0),np.eye(2),1)],1)
+	H = Kernel([Gaussian(0,1,1)],1)
 	# initial field
 	f0 = Field([Gaussian(c,0.2,1) for c in range(10)])
 	# field covaraince function
-	Q = SquaredExponential(width=np.eye(2))
+	Q = SquaredExponential(width=1)
 	# noise covariance matrix
 	R = np.eye(ny)
 	# state covariance
@@ -46,7 +47,7 @@ def example_1():
 	plt.figure()
 	hinton.hinton(model.LDS.A)
 	plt.figure()
-	model.F[0].plot(np.linspace(-2,2,100))
+	model.F[0].plot(np.linspace(-5,5,100))
 	plt.show()
 	
 

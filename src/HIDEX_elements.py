@@ -172,20 +172,31 @@ class SquaredExponential(CovarianceFunction):
         """
         Parameters
         ==========
-        width : matrix
-                width matrix of the covariance function
+        width : scalar or matrix
+                width of the covariance function
         constant :
                 constant that premultiplies the covariance function
         """
-        CovarianceFunction.__init__(self, width.shape[0])
+        try:
+            dim = width.shape[0]
+        except AttributeError:
+            dim = 1
+        CovarianceFunction.__init__(self, dim)
         # we construct the covariance function as though it was a kernel, which
         # of course it is, except it's only ever going ot have one 'base' - a
         # Gaussian.
-        self.bases = [Gaussian(
-            centre = np.zeros(width.shape[0]),
-            width = np.matrix(width),
-            constant = 1
-        )]
+        if dim == 1:
+            self.bases = [Gaussian(
+                centre = 0,
+                width = width,
+                constant = 1
+            )]
+        else:
+            self.bases = [Gaussian(
+                centre = np.zeros(dim),
+                width = np.matrix(width),
+                constant = 1
+            )]
         self.weights = [1]
         self.log.debug("formed new SquaredExponential CovarianceFunction")
     
