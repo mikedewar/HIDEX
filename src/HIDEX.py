@@ -85,9 +85,8 @@ class HIDEX:
                 for G in self.G
             ])
             # this is [B_1 B_2 .. B_q; I 0]
-            I = np.eye(len(self.phi)*(self.q-1))
-            O = np.zeros((len(self.phi)*(self.q-1), len(self.phi)))
-            B = np.vstack([B, np.hstack([I, O])])
+            O = np.zeros((len(self.phi)*(self.p-1), self.q*len(self.phi)))
+            B = np.vstack([B, O])
         else:
             B = None
         # C = <H,phi>(s1 ... sn)

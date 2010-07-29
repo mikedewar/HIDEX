@@ -90,10 +90,10 @@ class Gaussian(BasisFunction):
             centre of the basis function
     width : scalar or matrix
             width of the basis function
-    constant : scalar
-            constant that premultiplies the basis function
+    const : scalar
+            const that premultiplies the basis function
     """
-    def __init__(self,centre,width,constant):
+    def __init__(self,centre,width,const):
         try:
             dim = len(centre)
         except TypeError:
@@ -107,7 +107,7 @@ class Gaussian(BasisFunction):
             self.centre = np.array(centre)
             self.width = np.array(width)
             self.invwidth = np.linalg.inv(width)
-        self.constant = constant
+        self.const = const
         # consistency assertions
         if self.dim > 1:
             assert len(centre) == width.shape[0]
@@ -120,31 +120,36 @@ class Gaussian(BasisFunction):
             # should return a scalar
             self.log.debug("forming \int \phi(s) \phi(s) ds")
             cij=(self.width+other.width)/(self.width*other.width)
-		    rij=(self.centre-other.centre)**2/(self.width+other.width)
-		    constant = self.constant*other.constant*(np.pi)**(self.dim*0.5)
-		    return constant*(cij**(-0.5*self.dim))*np.exp(-rij))
+            rij=(self.centre-other.centre)**2/(self.width+other.width)
+            const = self.const*other.const*(np.pi)**(self.dim*0.5)
+            return const*(cij**(-0.5*self.dim))*np.exp(-rij)
         elif self.dim == 2 and other.dim == 1:
             # should return a basis function
+            # will only work with zero-mean isotropic kernels
+            assert all(self.centre.flatten() == np.array([0,0])), self.centre
+            assert all(np.diag(self.width) == self.width[0,0]), self.width
+            a = self.width[0,0]
             self.log.debug("forming \int \psi(s,s') \phi(s) ds")
-            constant = (pb.pi*self.width*other.width)/(self.width+other.width)
-		    width = self.width + other.width
-		    centre = self.centre + other.centre
-		    return Basis(centre,width,constant)
+            const = (self.const*other.const)*(np.pi*a*other.width)/(a+other.width)
+            width = a + other.width
+            centre = other.centre
+            assert isinstance(centre,float), centre
+            assert isinstance(width,float), width
+            assert isinstance(const,float), const
+            return Gaussian(centre,width,const)
         else:
             print self.dim
             print other.dim
             raise NotImplementedError
     
     def __call__(self,x):
+        d = x - self.centre
         if self.dim == 1:
-            return self.constant * np.exp(
-                -0.5*(x-self.centre)**2 * self.invwidth
-            )
+            return self.const * np.exp(-0.5*d**2 * self.invwidth)
         else:
             assert len(x) == len(self.centre), (x,self.centre)
-            return self.constant * np.exp(
-                -0.5 * np.inner( np.inner(
-                    (x - self.centre), self.invwidth),(x - self.centre))
+            return self.const * np.exp(
+                -0.5 * np.inner(np.inner(d,self.invwidth),d)
             )
     
     def plot(self,x,*args):
@@ -160,14 +165,14 @@ class CovarianceFunction(Kernel):
     
 
 class SquaredExponential(CovarianceFunction):
-    def __init__(self,width):
+    def __init__(self,width,const=1):
         """
         Parameters
         ==========
         width : scalar or matrix
                 width of the covariance function
-        constant :
-                constant that premultiplies the covariance function
+        const :
+                const that premultiplies the covariance function
         """
         try:
             dim = width.shape[0]
@@ -181,13 +186,13 @@ class SquaredExponential(CovarianceFunction):
             self.bases = [Gaussian(
                 centre = 0,
                 width = width,
-                constant = 1
+                const = const
             )]
         else:
             self.bases = [Gaussian(
                 centre = np.zeros(dim),
                 width = np.matrix(width),
-                constant = 1
+                const = const
             )]
         self.weights = [1]
         self.log.debug("formed new SquaredExponential CovarianceFunction")
