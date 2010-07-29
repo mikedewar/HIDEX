@@ -539,6 +539,20 @@ for $i,i' = 1 \ldots p$ and $j,j' = 1 \ldots q$ where the notation $[\boldsymbol
 
 \todo{sort out hats!}
 
-\newpage
+\section{Results}
+
+\section{Conclusion}
+
+We have introduced a model form suitable for linear spatiotemporal system identification. It incorporates multiple spatial orders, spatiotemporal inputs, and a spatially aggregating observation process. We hope that this model will form a useful starting point for future spatiotemporal system identification. 
+
+We have derived an estimation framework, based on maximum likelihood estimation via the EM algorithm, largely following the work of \cite{Gibson}. This suggests one avenue for future work, that of nonlinear spatiotemporal system identification which, for example, would be important in applying these methods to EEG data \cite{Schiff}. 
+
+This estimation framework relies on a basis function decomposition of the model. The `E'-step requires us to represent the field using weighted basis functions, where the weights are then estimated using standard machinery. The `M'-step necessitates a decomposition of the kernel parameters allowing us to trivially maximise the resulting quadratic lower bound on the likelihood. This decomposition could be avoided, for example by using nonparametric representations of the model distributions and deriving appropriate posterior distributions over the model's component kernels and fields. While this is noted as future work, we finish by highlighting some practical advantages of a finite approximation to the HIDEX model. 
+
+The first is associated with representation. We are able to carefully control the order of the finite representation by appropriately decomposing the field, balancing frequency constraints \cite{Scerri} with computational constraints and experimental design. For example, in spatial areas of high frequency, or areas of particular interest, more basis functions can be used to represent higher frequencies, while detail can be sacrificed elsewhere. Exploration 
+
+The second point is associated with control.
+
+
 
 \end{document}

@@ -1,6 +1,7 @@
 import numpy as np
 import logging
 import sys
+import matplotlib.pyplot as plt
 logging.basicConfig(stream=sys.stdout,level=logging.WARNING)
 
 class Field:
@@ -55,9 +56,15 @@ class Kernel:
     def __init__(self,bases,weights):
         self.dim = bases[0].dim
         self.bases = bases
-        self.weights = [weights]
+        self.weights = weights
         self.log = logging.getLogger('Kernel')
         self.log.debug("formed new Kernel")
+    
+    def plot(self,x):
+        y = np.zeros(len(x))
+        for basis in self.bases:
+            y += np.array([basis(xi) for xi in x])
+        plt.plot(x,y)
 
     
 class BasisFunction:

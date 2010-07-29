@@ -3,6 +3,8 @@ from HIDEX import *
 from HIDEX_elements import *
 import logging
 import sys
+import hinton
+import matplotlib.pyplot as plt
 
 logging.basicConfig(stream=sys.stdout,level=logging.DEBUG)
 
@@ -14,8 +16,20 @@ def example_1():
 	q = 0
 	ny = 50
 	# Kernels
-	F = [Kernel([Gaussian((0,0),np.eye(2),1)],1)]
-	G = [Kernel([Gaussian((0,0),np.eye(2),1)],1)]
+	F = [
+	    Kernel(
+	        bases = [
+	            Gaussian((0,0), np.eye(2), 1),
+	            Gaussian((0,0), 2*np.eye(2), 1)
+	        ],
+	        weights = [0.1, -0.05]),
+	]
+	G = [
+	    Kernel(
+	        bases = [Gaussian((0,0),np.eye(2),1)],
+	        weights = [0.1]
+	    ),
+	]
 	H = Kernel([Gaussian((0,0),np.eye(2),1)],1)
 	# initial field
 	f0 = Field([Gaussian(c,0.2,1) for c in range(10)])
@@ -29,7 +43,12 @@ def example_1():
 	obs_locns = np.linspace(0,10,ny)
 	# HIDEX model 
 	model = HIDEX(F, G, H, f0, Q, R, Pi0, obs_locns)
-	print model.LDS.A
+	plt.figure()
+	hinton.hinton(model.LDS.A)
+	plt.figure()
+	model.F[0].plot(np.linspace(-2,2,100))
+	plt.show()
+	
 
 
 if __name__ == "__main__":
