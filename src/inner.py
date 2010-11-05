@@ -76,11 +76,17 @@ class Inner:
 
     def kernel_field(self):
         self.log.debug('forming <K,g>')
-        # <K,g> = a^T <psi_K, phi_g> b
+        # <K,g> = a^T <psi_K, phi_g^T> b
         # where a is the vector of weights of K and psi_K are the basis
         # functions of K. phi_g are the basis functions of g and b are g's 
         # weights
-        raise NotImplementedError
+        Phi = outer(self.A.bases,self.B.bases) # <psi_K, phi_g^T>
+        # we now need to flatten Phi and return a field with all the basis
+        # functions in Phi as one long vector, and the appropriate product
+        # of weights as the weights of the new field. Ugly!
+        bases = Phi.flatten()
+        weights = [ai*bj for ai in self.A.weights for bj in self.B.weights]
+        return Field(bases=bases,weights=weights)
     
     def kernel_basisfunction(self):
         self.log.debug("forming <psi,f>")
@@ -100,7 +106,7 @@ class Inner:
         for basis_i in self.A.bases:
             for basis_j in self.B.bases:
                 Phi[i,j] = inner(basis_i, basis_j)
-        return np.inner(self.A.weights, np.inner(Phi, self.B.weights))
+        return np.dot(self.A.weights, np.dot(Phi, self.B.weights))
     
     def field_kernel(self):
         raise NotImplementedError
@@ -118,7 +124,7 @@ class Inner:
             Phi = np.empty(len(self.B.bases), dtype=float)
             for i,basis_i in enumerate(self.B.bases):
                 Phi[i] = self.A.inner(basis_i)
-            return np.inner(Phi,self.B.weights)
+            return np.dot(Phi,self.B.weights)
         elif self.A.dim == 2:
             self.log.debug("forming <psi,f>")
             # <psi,f> = <psi,phi^T> b
@@ -140,7 +146,7 @@ class Inner:
         for i,basis_i in enumerate(self.A.bases):
             for j,basis_j in enumerate(self.B.bases):
                 Phi[i,j] = inner(basis_i, inner(self.C, basis_j))
-        return np.inner(self.A.weights, np.inner(Phi, self.B.weights))
+        return np.dot(self.A.weights, np.dot(Phi, self.B.weights))
     
     def basisfunction_kernel_basisfunction(self):
         self.log.debug("forming <phi,phi>_K")
@@ -148,7 +154,7 @@ class Inner:
         #               = a^T <phi,<psi,phi>>
         bases = [inner(basis_i, self.B) for basis_i in self.C.bases]
         Phi = [inner(self.A,basis_i) for basis_i in bases]
-        return np.inner(self.C.weights,Phi)
+        return np.dot(self.C.weights,Phi)
         
     def covariance_basisfunction(self):
         raise NotImplementedError
@@ -166,7 +172,17 @@ def outer(A,B,C=None):
     Computes a matrix <phi,phi^T> which is a pain. It's an outer product of 
     inner products.
     """
-    out = np.empty((len(A),len(B)),dtype=float)
+    if (A[0].dim == 1) and (B[0].dim==1):
+        # will return a regular array of floats
+        out = np.empty((len(A),len(B)),dtype=float)
+    elif (A[0].dim == 2) and (B[0].dim == 1):
+        # will return an array of basis functions
+        out = np.empty((len(A),len(B)),dtype=object)
+    else:
+        print A[0].dim
+        print B[0].dim
+        raise NotImplementedError
+    
     for i,phi_i in enumerate(A):
         for j,phi_j in enumerate(B):
             out[i,j] = inner(phi_i, phi_j, C)

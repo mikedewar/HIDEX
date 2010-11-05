@@ -2,6 +2,7 @@ from HIDEX_elements import Field, Kernel, CovarianceFunction
 from inner import inner, outer
 from pyLDS import LDS
 import numpy as np
+import copy
 
 import sys
 import logging
@@ -67,7 +68,17 @@ class HIDEX:
             list of input fields
         """
         self.log.info('simulating HIDEX model')
-        raise NotImplementedError
+        # extract weights of input fields
+        w = [np.matrix(u.weights).T for u in U]
+        # simulate the underlying LDS
+        X,Y = self.LDS.simulate(w)
+        # form the hidden fields and return
+        f_seq = np.empty(len(X),dtype=object)
+        for i,x in enumerate(X):
+            f = copy.copy(self.f0)
+            f.weights = x
+            f_seq[i] = f
+        return f_seq,Y
 
     def gen_LDS(self):
         self.log.info('forming LDS model')
@@ -133,16 +144,14 @@ class HIDEX:
                 list of observation vectors
         """
         self.log.info('estimating fields')
-        # form state space model
-        ssmodel = self.gen_LDS()
         # use the smoother to extract the estimated field weights
-        X, P, K, M = ssmodel.smoother(Y, [u.weights for u in U])
+        X, P, K, M = self.LDS.rtssmooth(Y, [np.matrix(u.weights).T for u in U])
         # form the list of fields
         f = [Field(bases=self.phi, weights=x) for x in X]
         # return the fields, the covariances and the cross covariances
         return f, P, M
 
-    def estimate_kernels(f, g, Y):
+    def estimate_kernels(self, f, g, Y):
         """
         Parameters
         ==========
@@ -155,7 +164,7 @@ class HIDEX:
         """
         self.log.info('estimating kernels')
         # treat psi as a kernel with unit weights
-        psi = Kernel(bases=self.psi, weights=ones(length(self.psi)))
+        psi = Kernel(bases=self.psi, weights=np.ones(len(self.psi)))
         # then define an operator P_op based on that kernel
         P_op = lambda f: inner(psi, f)
         # initialise gammas
@@ -164,46 +173,60 @@ class HIDEX:
         Gamma_a = np.empty((self.p, self.p))
         Gamma_b = np.empty((self.q, self.q))
         Gamma_ab = np.empty((self.p, self.q))
+        # form the time sequence
+        time = range(len(f))
         # form gammas
-        for i in range(self.p):
-            gamma_a[i] = inner(
-                f[t], 
-                P_op(f[t-i]), 
-                Qinv
-            )
-        for j in range(self.q):
-            gamma_b[j] = inner(
-                f[t], 
-                P_op(f[t-i]), 
-                Qinv
-            )
-        gamma_c = inner(y[t], P_op(f[t]), Rinv)
-        for i in range(self.p):
-            for idash in range(self.p):
-                Gamma_a[i, idash] = inner(
+        for t in time[1:]:
+            for i in range(self.p):
+                gamma_a[i] += inner(
+                    f[t], 
                     P_op(f[t-i]), 
-                    P_op(f[t-idash]), 
                     Qinv
                 )
-        for j in range(self.q):
-            for jdash in range(self.q):
-                Gamma_b[j, jdash] = inner(
-                    P_op(g[t-j]), 
-                    P_op(g[t-jdash]), 
-                    Qinv
-                )
-        for i in range(self.p):
+        
+        for t in time[1:]:
             for j in range(self.q):
-                Gamma_ab[i, j] = inner(
+                gamma_b[j] += inner(
+                    f[t], 
                     P_op(f[t-i]), 
-                    P_op(f[t-j]), 
                     Qinv
                 )
-        Gamma_c = inner(
-            P_op(f[t]), 
-            P_op(f[t]), 
-            Rinv
-        )
+        
+        for t in time[self.p:]:
+            gamma_c = inner(y[t], P_op(f[t]), Rinv)
+            for i in range(self.p):
+                for idash in range(self.p):
+                    Gamma_a[i, idash] += inner(
+                        P_op(f[t-i]), 
+                        P_op(f[t-idash]), 
+                        Qinv
+                    )
+            
+        for t in time[self.q:]:
+            for j in range(self.q):
+                for jdash in range(self.q):
+                    Gamma_b[j, jdash] += inner(
+                        P_op(g[t-j]), 
+                        P_op(g[t-jdash]), 
+                        Qinv
+                    )
+            
+        for t in time[max(self.q,self.p):]:
+            for i in range(self.p):
+                for j in range(self.q):
+                    Gamma_ab[i, j] += inner(
+                        P_op(f[t-i]), 
+                        P_op(f[t-j]), 
+                        Qinv
+                    )
+            
+        for t in time:
+            Gamma_c += inner(
+                P_op(f[t]), 
+                P_op(f[t]), 
+                Rinv
+            )
+        
         # turn these into the large matrices
         ga = np.hstack(gamma_a)
         gb = np.hstack(gamma_b)

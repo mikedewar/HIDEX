@@ -10,6 +10,7 @@
 \usepackage{booktabs} % tables
 \usepackage{cite}
 \usepackage{algorithm,algorithmic}
+\usepackage{url}
 
 \newcommand{\todo}[1]{\textsf{\emph{\textbf{\textcolor{blue}{#1}}}}}
 \newcommand{\GP}[2]{\mathrm{GP}(#1,#2)}
@@ -60,9 +61,9 @@
 \section{The HIDEX($p,q$) Model}
 \label{sec:model}
 
-We first introduce the HIDEX($p,q$) model. We then derive its log-likelihood function and introduce a set of decompositions which will be used in Section \ref{sec:estimation} making the system identification problem tractable. 
+We first introduce the HIDEX($p,q$) model. We then introduce a set of decompositions which will be used in Section \ref{sec:estimation} to make the maximum likelihood system identification problem tractable. 
 
-The model is defined across spatial locations $s \in \mathcal{S} = \mathbb{R}^{n_\mathcal{S}}$ and at times $t \in \mathbb{Z}_+$. Here $n_\mathcal{S} \in \{1,2,3\}$ is the spatial dimension of the system under study, and, as time is always one dimensional, it is $n_\mathcal{S}$ that we use to describe the dimension of the model. 
+The model is defined across spatial locations $s \in \mathcal{S} = \mathbb{R}^{n_\mathcal{S}}$ and at times $t \in \mathbb{Z}_+$. Here $n_\mathcal{S} \in \{1,2,3\}$ is the spatial dimension of the system under study and, as time is always one dimensional, it is $n_\mathcal{S}$ that we use to describe the dimension of the model. 
 
 \begin{definition}[Spatial Mixing Kernel]
 	Let $\mathcal{S}$ denote an $n_\mathcal{S}$-dimensional physical space and $f_t(s): \mathbb{R}^{n_\mathcal{S}} \onto \mathbb{R}$ denote the spatial field across space $s \in \mathcal{S}$ at time $t \in \mathbb{Z}_+$. Then the kernel $k(s,r): \mathbb{R}^{n_\mathcal{S}} \times \mathbb{R}^{n_\mathcal{S}} \onto \mathbb{R}$ of the integral operator
@@ -93,6 +94,7 @@ The model is defined across spatial locations $s \in \mathcal{S} = \mathbb{R}^{n
 		\item The disturbance $e(s) \sim \mathrm{GP}(0,Q(s,s'))$ is assumed i.i.d, drawn from a Gaussian Process with zero mean and covariance function $Q(s,s')$.
 		\item The observation noise $\epsilon \sim N(0,\sigma)$ is assumed i.i.d, drawn from a univariate normal distribution with zero mean and variance $\sigma$.
 		\item The initial field $f_0(s) \sim \mathrm{GP}(0,Q(s,s'))$ is drawn from the same distribution as $e(s)$.
+		\item the covariance of the disturbance $Q(s,s')$ is assumed known.
 	\end{itemize}
 \end{assumption}
 
@@ -105,57 +107,8 @@ The following assumptions are made on the input and output of the system under s
 	\end{itemize}
 \end{assumption}
 
-\subsection{Deriving the Log-Likelihood}
-
-Let the unknown parameter set be defined as $\theta = \{F_1, F_2, \ldots F_p, G_1,G_2,\ldots G_q, H\}$ - the set of all the spatial mixing kernels that together define the HIDEX model. Let $\mathcal{F} = \{f_t(s) : t = 1 \ldots T\}$ denote the set of fields associated with each time point of the collected observations and similarly $\mathcal{G} = \{g_t(s) : t = 1 \ldots T\}$ denotes all the inputs. The likelihood factorises along the independence structures defined by the model formulation:
-\begin{equation}
-	\begin{split}
-	p(\mathcal{F}, Y;\theta) =  p(f_0) \prod_{t=1}^T p(\yvec_t|f_t)
-	\prod_{t=1}^T  p(f_t|\mathcal{F}_{t-1}^{t-p}, \mathcal{G}_{t-1}^{t-q}) 
-	\end{split}
-\end{equation}
-where $\yvec_t = [y_t(s_1) ~ y_t(s_2) ~ \ldots ~ y_t(s_m)]^\top$, the vector formed by evaluating $y_t(s)$ of Equation \ref{eqn:hidex-obs} at each of the $m$ observation locations. Here $\mathcal{F}_{t-1}^{t-p} = \{f_{t-1} \ldots f_{t-p}\}$ and similarly $\mathcal{G}_{t-1}^{t-q}= \{g_{t-1} \ldots g_{t-q}\}$. Note that we have dropped the dependence of the distributions on $\theta$, and the spatial argument of the fields $f_t$ and $g_t$ for notational convenience. Using Assumption \ref{ass:noise}, these distributions are
-\begin{equation}
-	\label{eqn:ydist}
-	p(\yvec_t|f_t) = \N{\hat{\yvec}_t}{R}
-\end{equation}
-\begin{equation}
-	\label{eqn:fdist}
-	p(f_t|\mathcal{F}_{t-1}^{t-p}, \mathcal{G}_{t-1}^{t-q}) = \GP{ \hat{f}_t}{Q(s,s')}
-\end{equation}
-where $R = \sigma I_m$,
-\begin{equation}
-	\hat{f}_t =\sum_{i=1}^{p}( \F_i f_{t-i}) + \sum_{j=1}^{q}(\G_j g_{t-j})
-\end{equation}
-and 
-\begin{equation}
-	\hat{\mathbf{y}}_t = (\mathbb{H}f_t)([s_1 \ldots s_m]^\top)
-\end{equation}
-which denotes the vector formed by the evaluation of $(\mathbb{H}f_t)$ at all the observation locations. Here $I_m$ denotes the $m\times m$ identity matrix.
-
-If we define the log likelihood as
-\begin{equation}
-	\label{eqn:loglik}
-	\ell(\theta) = \ln p(\mathcal{F}, Y;\theta)
-\end{equation}
-then, using the notation
-\begin{equation}
-	\inner{f}{g}{Q} = \int_\mathcal{S} \int_\mathcal{S} ds~ds' f(s') Q(s',s) g(s)
-\end{equation}
-\begin{equation}
-	\dist{f}{Q} = \inner{f}{f}{Q}
-\end{equation}
-for functions and similarly
-\begin{equation}
-	\dist{y}{R} = y^\top Ry
-\end{equation}
-for vectors, we can substitute Equations \ref{eqn:ydist} and \ref{eqn:fdist} into the log likelihood \ref{eqn:loglik} to get:
-\begin{equation}
-	\ell(\theta) =  \epsilon  - \frac{1}{2}\sum_t\dist{f_t - \hat{f}_t}{Q^{-1}} - \frac{1}{2}\sum_t\dist{\yvec_t-\hat{\yvec_t}}{R^{-1}}
-\end{equation}
-where $\epsilon$ collects together all the terms that do not depend on (any element of) $\theta$.
-
 \subsection{Decomposition}
+\label{sec:decomp}
 
 \todo{Don't know how to word these assumptions, but quite like the fact that they exist. Maybe VK's thesis does this sort of thing and the wording is correct in there?}
 
@@ -187,20 +140,7 @@ where $x_t \in \R^{n_x}$ is a vector of unknown weights, referred to as the stat
 where $a_i, b_j, c \in \R^{n_y}$ are the parameters of the kernels $F_i, G_j$ and $H$ respectively. Here $\psi(s,s') : \mathbb{R}^{n_\mathcal{S}} \times \mathbb{R}^{n_\mathcal{S}} \onto \mathbb{R}$ is a vector of basis functions drawn from the spanning set thingy.
 \end{assumption}
 
-Using the field decomposition (\ref{eq:f decomp}) we can rewrite 
-\begin{equation}
-	\dist{f_t(s) - \hat{f}_t(s)}{Q^{-1}} = \dist{x_t - \hat{x}_t}{\Xi}
-\end{equation}
-where
-\begin{equation}
-	\begin{split}
-	\Xi = \int\int ds' ds ~ \phi(s')Q^{-1}(s',s)\phi(s)^\top
-	\end{split}
-\end{equation}
-allowing us to replace the infinite dimensional term in the likelihood with a finite dimensional term via the decomposition, giving
-\begin{equation}
-	\ell(\theta) =  \epsilon  - \frac{1}{2}\dist{x_t - \hat{x}_t}{\Xi} - \frac{1}{2}\dist{\yvec_t-\hat{\yvec_t}}{R^{-1}}
-\end{equation}
+
 
 \begin{remark}
 	The above assumptions will not hold if $\mathcal{S}$ is defined as a subset of $\mathbb{R}^{n_\mathcal{S}}$. This is due to the fact that the field $f$ would no longer be band limited due to the discontinuity at the edges of $\mathcal{S}$. It is worth noting that while we represent the field over an infinite space, the representation will be largely uninformative outside the observed region of interest. If we use local basis functions, such as squared exponential bases, then the representation of the field away from the centres of the bases will be described almost completely by the properties of the disturbance process.
@@ -213,21 +153,24 @@ As a notational convenience, we have used the same basis functions in the decomp
 \begin{remark}
 	It is useful for what follows to derive the distribution of the system states from the distribution of the field. Under the field decomposition we can write
 \begin{equation}
-	\inner{\phi(s)}{f_t(s)}{} = \inner{\phi(s)}{\phi(s)^\top}{} x_t
+	\inner{\phi}{f_t}{} = \inner{\phi}{\phi^\top}{} x_t
+\end{equation}
+using the notation
+\begin{equation}
+	\inner{f}{g}{} = \int_\mathcal{S} ~ds f(s) g(s)
 \end{equation}
 Hence
 \begin{equation}
-	x_t = \Phi^{-1}\inner{\phi(s)}{f_t(s)}{}
+	x_t = \Phi^{-1}\inner{\phi}{f_t}{}
 \end{equation}
 where
 \begin{equation}
-		\Phi =  \int_\mathcal{S}ds\phi(s)\phi(s)^\top
- 		= \inner{\phi}{\phi^\top}{}
+		\Phi = \inner{\phi}{\phi^\top}{}
 \end{equation}
 We can derive the mean and covariance of $x_t$ directly:
 \begin{equation}
 	\begin{split}
-	\E[x_t] = & \Phi^{-1} \inner{\phi(s)}{\E[f_t(s)]}{} \\
+	\E[x_t] = & \Phi^{-1} \inner{\phi}{\E[f_t]}{} \\
 	= & \Phi^{-1} \inner{\phi}{\phi^\top}{} \hat{x}_t \\
 	= & \hat{x}_t
 	\end{split}
@@ -235,9 +178,22 @@ We can derive the mean and covariance of $x_t$ directly:
 and similarly for the covariance\cite{Scerri09}
 \begin{equation}
 	\label{eqn:covx}
-	\cov(x_t) = \Phi^{-1} \Xi \Phi^{-1}
+	\begin{split}
+	\cov(x_t)  = & \E[(x_t - \hat{x}_t)(x_t - \hat{x}_t)^\top] \\
+	 = & \E[x_t\hat{x}_t^\top] - \hat{x}_t\hat{x}_t^\top \\
+	 = &  \E[\Phi^{-1}\inner{\phi}{f_t}{}\inner{f_t}{\phi^\top}{}\Phi^{-1}] 
+	  -  \Phi^{-1}\inner{\phi}{\hat{f}_t}{}\inner{\hat{f}_t}{\phi^\top}{}\Phi^{-1}
+	\\
+	 = &\Phi^{-1} \iint_\mathcal{S} \phi(s) (\E[f_t(s) f_t(s')] \\
+	 & -\hat{f}_t(s)\hat{f}_t(s')) \phi(s)^\top ds ds' \Phi^{-1} \\
+	 = &\Phi^{-1} \inner{\phi}{\phi^\top}{Q} \Phi^{-1}
+	\end{split}
 \end{equation}
-noting that $\Phi$ is symmetric.	
+where, noting that the covariance function can be defined as $Q(s,s')=\E[f_t(s) f_t(s')] -\hat{f}_t(s)\hat{f}_t(s')$, we use the following notation for the weighted inner product:
+\begin{equation}
+	\inner{\phi}{\phi^\top}{Q} = \int_\mathcal{S}\int_\mathcal{S}  \phi(s') Q(s,s') \phi^\top(s') ~ds'ds
+\end{equation}
+and  and $\Phi$ is symmetric.	
 \end{remark}
 
 \section{Parameter Estimation}
@@ -267,24 +223,28 @@ The EM algorithm achieves this by maximising a lower bound on the log likelihood
 \end{equation}
 where $\E_{\theta'}[\cdot]$ denotes expectation taken with respect to the distribution $\p(X|Y ; \theta')$ where $\theta'$ is the current parameter estimate. In this context \cite{Gibson05}, the algorithm consists of two steps: the E-step performs the expectation using the standard Rauch-Tung-Streibel (RTS) smoother \cite{Rauch65} producing the expected state sequence and therefore leading to a deterministic lower bound which is a quadratic in $\theta$. The M-step finds the updated parameter estimate by maximising this quadratic.
 
+\subsection{Likelihood}
+
+\todo{derivation of the likelihood in terms of the decomposed model}
+
 \subsection{E-step}
 
-The E-step involves forming the expectation in $Q(\theta,\theta')$, which itself involves finding the distribution over the field $f_t$ given all the data $Y$ and the current kernel estimates $\theta'$. We demonstrate that, using the field decompositions in Assumption \ref{ass:fielddecomp}, this distribution is provided by the RTS smoother. We first derive a recursive relationship between the decomposed field's weights, and then show that, using this relationship, we can write the HIDEX$(p,q)$ model as a $pn_x$-order state space model.
+The E-step involves forming the expectation in $Q(\theta,\theta')$ which, in turn, involves finding the distribution over the field $f_t$ given all the data $Y$ and the current kernel estimates $\theta'$. We demonstrate that, using the field decompositions in Assumption \ref{ass:fielddecomp}, this distribution is provided by the RTS smoother. We first derive a recursive relationship between the decomposed field's weights, and then show that, using this relationship, we can write the HIDEX$(p,q)$ model as a $pn_x$-order state space model.
 
 \subsubsection{Field Weight Dynamics}
 
 To derive an expression for $\hat{x}_t$, first note that
 \begin{equation}
 	\begin{split}
-	f_t(s) & = \hat{f}_t(s) + \GP{\mathbf{0}}{Q(s,s')}\\
-	 = & \sum_{i=1}^{p}( \F_i f_{t-i})(s) + \sum_{j=1}^{q}(\G_j g_{t-j})(s) + \GP{\mathbf{0}}{Q(s,s')}
+	f_t(s) & = \hat{f}_t(s) + \GP{0}{Q(s,s')}\\
+	 = & \sum_{i=1}^{p}( \F_i f_{t-i})(s) + \sum_{j=1}^{q}(\G_j g_{t-j})(s) + \GP{0}{Q(s,s')}
 	\end{split}
 \end{equation}
-where we use the boldface $\mathbf{0}$ to indicate the Gaussian Process is zero-mean for all $s \in \mathcal{S}$. Using the decomposition of the fields $f_t(s)$ and $g_t(s)$ given in Assumption \ref{ass:fielddecomp} this can be re-written
+Using the decomposition of the fields $f_t(s)$ and $g_t(s)$ given in Assumption \ref{ass:fielddecomp} this can be re-written
 \begin{equation}
 	\begin{split}
 	\phi(s)^\top x_t = \sum_{i=1}^{p}(\F_i \phi^\top)(s)x_{t-i} + \sum_{j=1}^{q}(\G_j\phi^\top)(s)u_{t-j} \\ 
-	+ \GP{\mathbf{0}}{Q(s,s')}
+	+ \GP{0}{Q(s,s')}
 	\end{split}
 \end{equation}
 To isolate $x_t$ on the left hand side, we pre-multiply both sides by $\phi(s)$, integrate over space, and pre-multiply both sides by the resulting matrix, giving
@@ -295,7 +255,7 @@ To isolate $x_t$ on the left hand side, we pre-multiply both sides by $\phi(s)$,
 	\sum_{j=1}^{q} \Phi^{-1} \int_\mathcal{S}ds \phi(s)(\G_j\phi^\top)(s)u_{t-j} + w_t
 	\end{split}
 \end{equation}
-where $w_t \sim N(0,\Sigma_w)$ and $\Sigma_w = \Phi^{-1}\Xi\Phi^{-1}$, recapitulating the result in \ref{eqn:covx}.
+where $w_t \sim N(0,\Sigma_w)$ and $\Sigma_w = \Phi^{-1} \inner{\phi(s)}{\phi(s)^\top}{Q} \Phi^{-1}$, recapitulating the result in \ref{eqn:covx}.
 \begin{remark}
 	By defining the following matrices
 	\begin{equation}
@@ -356,8 +316,25 @@ The observation matrix is formed by substituting the field decomposition into \r
 \end{equation}
 where we again use the notation $(\mathbb{H}\phi^\top)([s_1 ~  \ldots ~ s_{n_y}]^\top)$ to represent the row vector $(\mathbb{H}\phi^\top)(s)$ evaluated at multiple locations $s_1 \ldots s_{n_y}$ to give a matrix $(\mathbb{H}\phi^\top)([s_1 ~  \ldots ~ s_{n_y}]^\top) \in \R^{n_y \times n_x}$.
 
+We use the RTS Smoother as derived in \cite{Gibson}, which yields the following quantities for all $t \in \{1, 2 \ldots T\}$:
+\begin{equation}
+    \hat{x}_t = \E[x_t | x_1 \ldots x_T, u_1 \ldots u_T]
+\end{equation}
+\begin{equation}
+    P_t = \cov(x_t)
+\end{equation}
+\begin{equation}
+    M_t = \cov(x_t,x_{t-1})
+\end{equation}
+
+\begin{remark}
+    In general, we cannot analytically calculate inner products like $\inner{\phi(s)}{\phi^\top(s)}{F_i}$ without first decomposing $F_i$. 
+
+
 
 \subsection{M-step}
+
+\todo{From here it needs to be in terms of the decomposed model}
 
 We need to maximise the expected log-likelihood function
 \begin{equation}
@@ -463,34 +440,33 @@ where we define a new operator $(\mathbb{P} f)(s) = \int_\mathcal{S}dr~\psi(s,r)
 		b_j
 		\end{split}
 \end{equation}
-\todo{I've forgotten the $\sum_t$ somewhere but I think they can be moved into the definitions of the various lambdas and Gammas below...}
 where
 \begin{equation}
-	\gamma_i^a = \inner
+	\gamma_i^a = \sum_t\inner
 	{\E[f_t(s)]}
 	{(\mathbb{P} f_{t-i})}
 	{Q^{-1}}
 \end{equation}
 \begin{equation}
-	\gamma_j^b = \inner
+	\gamma_j^b = \sum_t\inner
 	{\E[f_t(s)]}
 	{(\mathbb{P} g_{t-j})}
 	{Q^{-1}}
 \end{equation}
 \begin{equation}
-	 \Gamma_{i,i'}^a = \inner
+	 \Gamma_{i,i'}^a = \sum_t \inner
 		{(\mathbb{P} f_{t-i})}
 		{(\mathbb{P}^\top f_{t-i'})}
 		{Q^{-1}}
 \end{equation}
 \begin{equation}
-	\Gamma_{j,j'}^b = \inner
+	\Gamma_{j,j'}^b = \sum_t \inner
 		{(\mathbb{P} g_{t-j})}
 		{(\mathbb{P}^\top g_{t-j'})}
 		{Q^{-1}}
 \end{equation}
 \begin{equation}
-	\Gamma_{i,j}^{ab} = \inner
+	\Gamma_{i,j}^{ab} = \sum_t \inner
 		{(\mathbb{P} f_{t-i})}
 		{(\mathbb{P}^\top g_{t-j})}
 		{Q^{-1}}
@@ -503,13 +479,13 @@ We can write the second term \ref{eqn:exploglik} as quadratic in the unknown par
 \end{equation}
 where \todo{The following expressions for $y_t$ need checking!}
 \begin{equation}
-	\gamma_c = \inner
+	\gamma_c = \sum_t \inner
 	{\E[y_t]}
 	{(\mathbb{P} f_t)}
 	{R^{-1}}
 \end{equation}
 \begin{equation}
-	 \Gamma^c = \inner
+	 \Gamma^c = \sum_t \inner
 		{(\mathbb{P} f_t)}
 		{(\mathbb{P}^\top f_t)}
 		{R^{-1}}
@@ -538,6 +514,10 @@ for $i,i' = 1 \ldots p$ and $j,j' = 1 \ldots q$ where the notation $[\boldsymbol
 \end{equation}
 
 \todo{sort out hats!}
+
+\begin{remark}
+Aspects of this derivation are difficult to implement directly, as we have presented the derivation using only those decompositions necessary. In practice we make use of the decompositions presented in Section \ref{sec:decomp} to calculate $\Gamma$. A full creative commons licensed Python implementation of this work is available at \url{http://github.com/mikedewar/HIDEX/}, along with code necessary for the synthetic examples presented below.
+\end{remark}
 
 \section{Results}
 

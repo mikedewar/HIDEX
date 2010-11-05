@@ -48,8 +48,11 @@ class Field:
             raise ValueError("trying to add %s to a Field!"%other)
     
     def __call__(self,x):
-        return sum([weight*basis(x) 
+        return np.sum([weight*basis(x) 
             for weight,basis in zip(self.weights,self.bases)])
+    
+    def plot(self,s):
+        plt.plot(s,[self(si) for si in s])
 
 
 class Kernel:
@@ -132,7 +135,7 @@ class Gaussian(BasisFunction):
             self.log.debug("forming \int \psi(s,s') \phi(s) ds")
             const = (self.const*other.const)*(np.pi*a*other.width)/(a+other.width)
             width = a + other.width
-            centre = other.centre
+            centre = float(other.centre)
             assert isinstance(centre,float), centre
             assert isinstance(width,float), width
             assert isinstance(const,float), const
@@ -149,7 +152,7 @@ class Gaussian(BasisFunction):
         else:
             assert len(x) == len(self.centre), (x,self.centre)
             return self.const * np.exp(
-                -0.5 * np.inner(np.inner(d,self.invwidth),d)
+                -0.5 * np.dot(np.dot(d,self.invwidth),d)
             )
     
     def plot(self,x,*args):
@@ -196,6 +199,9 @@ class SquaredExponential(CovarianceFunction):
             )]
         self.weights = [1]
         self.log.debug("formed new SquaredExponential CovarianceFunction")
+    
+    def __call__(self,si,sj):
+        return self.bases[0]([si,sj])
     
 
 if __name__ == "__main__":
